@@ -1,0 +1,20 @@
+{
+  "name": "eventsphere-workspace",
+  "version": "1.0.0",
+  "description": "EventSphere Management — MERN Stack Large-Scale Expo & Trade Show Platform",
+  "scripts": {
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && npm run seed",
+    "build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "mern",
+    "eventsphere",
+    "expo-management",
+    "trade-shows",
+    "aptech-eproject"
+  ],
+  "author": "Aptech eProjects Student",
+  "license": "ISC"
+}

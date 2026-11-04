@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Production build
+dist/
+frontend/dist/
+
+# Environment files
+.env
+backend/.env
+*.env.local
+
+# Uploads & Media
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs & temp
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
