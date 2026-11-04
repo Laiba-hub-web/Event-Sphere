@@ -18,3 +18,4 @@ router.put('/read/:userId', markAsRead);
 router.put('/:userId/read', markAsRead);
 
 module.exports = router;
+

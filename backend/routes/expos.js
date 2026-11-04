@@ -30,3 +30,4 @@ router.put('/:id', protect, authorize('admin'), uploadSingle('bannerImage'), upd
 router.delete('/:id', protect, authorize('admin'), deleteExpo);
 
 module.exports = router;
+

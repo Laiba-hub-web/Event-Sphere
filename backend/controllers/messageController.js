@@ -138,3 +138,4 @@ module.exports = {
   getThread,
   markAsRead,
 };
+

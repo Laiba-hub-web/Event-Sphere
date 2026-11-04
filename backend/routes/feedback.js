@@ -14,3 +14,4 @@ router.get('/expo/:expoId', protect, authorize('admin'), getByExpo);
 router.get('/session/:sessionId', protect, getBySession);
 
 module.exports = router;
+

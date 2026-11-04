@@ -25,3 +25,4 @@ router.delete('/:id/bookmark', protect, unbookmarkSession);
 router.put('/:id/bookmark', protect, bookmarkSession);
 
 module.exports = router;
+

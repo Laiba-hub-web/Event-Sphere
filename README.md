@@ -159,3 +159,4 @@ Visit **`http://localhost:5173`** in your browser.
 - **Backend syntax**: Verified clean with `node --check`
 - **Frontend production bundle**: Built cleanly via Vite (`npm run build`) with zero TypeScript/JSX errors
 - **Security**: Passwords hashed with Bcrypt (10 salt rounds), JWT authentication middleware, parameterized queries via Mongoose to prevent NoSQL injection.
+

@@ -19,3 +19,4 @@ router.delete('/expo/:expoId', protect, cancelRegistration);
 router.put('/:id/cancel', protect, cancelRegistration);
 
 module.exports = router;
+

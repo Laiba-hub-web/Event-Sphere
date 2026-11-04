@@ -16,3 +16,4 @@ router.get('/expo/:expoId/sessions', getSessionPopularity);
 router.get('/expo/:expoId/booths', getBoothStats);
 
 module.exports = router;
+

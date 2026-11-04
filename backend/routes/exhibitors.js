@@ -39,3 +39,4 @@ router.put('/:id/reject', protect, authorize('admin'), rejectApplication);
 router.get('/:id', getExhibitorProfile);
 
 module.exports = router;
+

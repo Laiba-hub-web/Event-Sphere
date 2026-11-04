@@ -1,3 +1,8 @@
+const dns = require('dns');
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (e) {}
+
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
@@ -35,30 +40,25 @@ const seedData = async () => {
     ]);
 
     console.log('Creating demo users...');
-    // Create Users
-    const salt = await bcrypt.genSalt(10);
-    const adminPassword = await bcrypt.hash('Admin123!', salt);
-    const exhibitorPassword = await bcrypt.hash('Exhibitor123!', salt);
-    const attendeePassword = await bcrypt.hash('Attendee123!', salt);
-
+    // Create Users (raw password, hashed automatically by UserSchema.pre('save'))
     const admin = await User.create({
       name: 'Sarah Jenkins (Admin)',
       email: 'admin@eventsphere.com',
-      password: adminPassword,
+      password: 'Admin123!',
       role: 'admin',
     });
 
     const exhibitorUser = await User.create({
       name: 'David Vance (Exhibitor)',
       email: 'exhibitor@techcorp.com',
-      password: exhibitorPassword,
+      password: 'Exhibitor123!',
       role: 'exhibitor',
     });
 
     const attendee = await User.create({
       name: 'Alex Rivera (Attendee)',
       email: 'attendee@eventsphere.com',
-      password: attendeePassword,
+      password: 'Attendee123!',
       role: 'attendee',
     });
 
@@ -265,3 +265,4 @@ const seedData = async () => {
 };
 
 seedData();
+

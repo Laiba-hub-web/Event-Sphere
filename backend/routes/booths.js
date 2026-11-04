@@ -27,3 +27,4 @@ router.post('/:id/release', protect, releaseBooth);
 router.put('/:id/release', protect, releaseBooth);
 
 module.exports = router;
+

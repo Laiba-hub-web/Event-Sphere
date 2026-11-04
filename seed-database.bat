@@ -5,3 +5,4 @@ echo ==========================================
 cd backend
 npm.cmd run seed
 pause
+

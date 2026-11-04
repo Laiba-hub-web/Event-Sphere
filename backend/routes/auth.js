@@ -21,3 +21,4 @@ router.put('/profile', protect, uploadSingle('avatar'), updateProfile);
 router.put('/change-password', protect, changePassword);
 
 module.exports = router;
+
