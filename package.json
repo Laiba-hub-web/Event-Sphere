@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "EventSphere Management — MERN Stack Large-Scale Expo & Trade Show Platform",
   "scripts": {
-    "backend": "cd backend && npm run dev",
-    "frontend": "cd frontend && npm run dev",
-    "seed": "cd backend && npm run seed",
-    "build": "cd frontend && npm run build"
+    "start": "START-EVENTSPHERE.bat",
+    "stop": "STOP-EVENTSPHERE.bat",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm.cmd run dev",
+    "seed": "cd backend && node seed.js",
+    "build": "cd frontend && npm.cmd run build"
   },
   "keywords": [
     "mern",
@@ -18,4 +20,3 @@
   "author": "Aptech eProjects Student",
   "license": "ISC"
 }
-

@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start EventSphere (Backend + Frontend + Browser)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\START-EVENTSPHERE.bat",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop EventSphere Servers",
+      "type": "shell",
+      "command": "${workspaceFolder}\\STOP-EVENTSPHERE.bat",
+      "problemMatcher": []
+    }
+  ]
+}

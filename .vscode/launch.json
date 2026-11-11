@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "▶ Start EventSphere Full Project",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": ".\\START-EVENTSPHERE.bat",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
