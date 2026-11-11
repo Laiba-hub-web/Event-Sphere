@@ -40,7 +40,7 @@ export default function FloorPlanPage() {
       const [expoRes, boothRes, exhRes] = await Promise.all([
         expoService.getOne(id),
         boothService.getByExpo(id),
-        exhibitorService.getByExpo(id).catch(() => ({ data: { exhibitors: [] } })),
+        exhibitorService.getByExpo(id, { all: true }).catch(() => ({ data: { exhibitors: [] } })),
       ])
       setExpo(expoRes.data.expo)
       setBooths(boothRes.data.booths || [])

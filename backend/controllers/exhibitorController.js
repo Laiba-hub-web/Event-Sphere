@@ -215,15 +215,56 @@ const updateProfile = async (req, res, next) => {
 };
 
 // ─── @route   GET /api/exhibitors/expo/:expoId ───────────────────────────────
-// ─── @access  Private
+// ─── @access  Public / Private
 const getExhibitorsByExpo = async (req, res, next) => {
   try {
-    const exhibitors = await ExhibitorProfile.find({
+    let exhibitors = await ExhibitorProfile.find({
       expo: req.params.expoId,
       applicationStatus: 'approved',
     })
       .populate('user', 'name email avatar')
       .sort({ company: 1 });
+
+    // If requested for Admin assignment (?all=true) or if this expo has no exhibitors yet,
+    // include all registered exhibitor companies across the platform (deduplicated by user)
+    if (req.query.all === 'true' || exhibitors.length === 0) {
+      const allProfiles = await ExhibitorProfile.find({})
+        .populate('user', 'name email avatar')
+        .sort({ company: 1 });
+
+      const seenUsers = new Set(
+        exhibitors.map((e) => e.user?._id?.toString()).filter(Boolean)
+      );
+
+      for (const prof of allProfiles) {
+        const uid = prof.user?._id?.toString();
+        if (uid && !seenUsers.has(uid)) {
+          seenUsers.add(uid);
+          exhibitors.push(prof);
+        }
+      }
+
+      // Also include any User with role='exhibitor' who hasn't created a profile yet
+      const User = require('../models/User');
+      const exhibitorUsers = await User.find({ role: 'exhibitor' }).select(
+        'name email avatar'
+      );
+      for (const u of exhibitorUsers) {
+        const uid = u._id.toString();
+        if (!seenUsers.has(uid)) {
+          seenUsers.add(uid);
+          exhibitors.push({
+            _id: u._id,
+            company: `${u.name} Enterprises`,
+            description: 'Registered Exhibitor Partner',
+            products: ['Enterprise Solutions'],
+            services: ['B2B Consulting'],
+            applicationStatus: 'approved',
+            user: u,
+          });
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,

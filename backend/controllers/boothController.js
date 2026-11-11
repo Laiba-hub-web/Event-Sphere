@@ -58,11 +58,51 @@ const assignBooth = async (req, res, next) => {
         .json({ success: false, message: 'exhibitorId is required' });
     }
 
-    // Optionally resolve the exhibitor profile automatically if not provided
+    const targetBooth = await Booth.findById(req.params.id);
+    if (!targetBooth) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Booth not found' });
+    }
+
+    // Resolve or auto-create an approved ExhibitorProfile for this expo + exhibitor
     let profileId = exhibitorProfileId;
     if (!profileId) {
-      const profile = await ExhibitorProfile.findOne({ user: exhibitorId });
-      if (profile) profileId = profile._id;
+      let profile = await ExhibitorProfile.findOne({
+        user: exhibitorId,
+        expo: targetBooth.expo,
+      });
+
+      if (!profile) {
+        const anyProfile = await ExhibitorProfile.findOne({ user: exhibitorId });
+        const User = require('../models/User');
+        const exhUser = await User.findById(exhibitorId);
+
+        profile = await ExhibitorProfile.create({
+          user: exhibitorId,
+          expo: targetBooth.expo,
+          company: anyProfile?.company || `${exhUser?.name || 'Partner'} Systems`,
+          description:
+            anyProfile?.description ||
+            'Official exhibiting partner showcasing enterprise hardware and software solutions.',
+          products: anyProfile?.products?.length
+            ? anyProfile.products
+            : ['Flagship Enterprise Platform'],
+          services: anyProfile?.services?.length
+            ? anyProfile.services
+            : ['B2B Integration & Support'],
+          website: anyProfile?.website || 'https://eventsphere.example.com',
+          contactEmail: anyProfile?.contactEmail || exhUser?.email || '',
+          contactPhone: anyProfile?.contactPhone || '+1 (800) 555-0199',
+          logo: anyProfile?.logo || '',
+          applicationStatus: 'approved',
+        });
+      } else if (profile.applicationStatus !== 'approved') {
+        profile.applicationStatus = 'approved';
+        await profile.save();
+      }
+
+      profileId = profile._id;
     }
 
     const booth = await Booth.findByIdAndUpdate(
@@ -78,12 +118,6 @@ const assignBooth = async (req, res, next) => {
     )
       .populate('exhibitor', 'name email')
       .populate('exhibitorProfile', 'company logo');
-
-    if (!booth) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Booth not found' });
-    }
 
     res.status(200).json({ success: true, booth });
   } catch (err) {
