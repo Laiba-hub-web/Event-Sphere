@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Layers, Store, Grid, ExternalLink, Calendar, MapPin } from 'lucide-react'
+import {
+  Store,
+  Grid,
+  Calendar,
+  MapPin,
+  Sparkles,
+  PackageCheck,
+  ExternalLink,
+} from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Badge from '../../components/ui/Badge'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
@@ -30,17 +38,23 @@ export default function MyApplicationsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Expo Applications</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Review review feedback, booth booking eligibility, and approval statuses.
+            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-blue-600 mb-1">
+              <Sparkles size={13} /> Exhibitor Applications
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">
+              My Trade Show Applications &amp; Booth Eligibility
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Track approval statuses, organizer feedback, and reserve 2D floor booths for approved events.
             </p>
           </div>
           <Link
             to="/expos"
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-semibold shadow transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all shrink-0 self-start sm:self-auto"
           >
+            <Store size={16} />
             Apply to More Expos
           </Link>
         </div>
@@ -54,7 +68,7 @@ export default function MyApplicationsPage() {
             icon={Store}
             title="No applications found"
             description="You have not submitted an application to exhibit at any expo yet."
-            actionLabel="Explore Expos"
+            actionLabel="Explore Upcoming Expos"
             actionTo="/expos"
           />
         ) : (
@@ -62,28 +76,37 @@ export default function MyApplicationsPage() {
             {applications.map((app) => (
               <div
                 key={app._id}
-                className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4"
+                className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-4"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {app.expo?.title || 'Exhibition Event'}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 text-xs text-gray-500 mt-1">
+                    <Link
+                      to={`/expos/${app.expo?._id}`}
+                      className="text-lg font-extrabold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <span>{app.expo?.title || 'Exhibition Event'}</span>
+                      <ExternalLink size={14} className="text-slate-400" />
+                    </Link>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
                       {app.expo?.date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar size={13} /> {new Date(app.expo.date).toLocaleDateString()}
+                        <span className="flex items-center gap-1.5">
+                          <Calendar size={13} className="text-blue-600" />
+                          {new Date(app.expo.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
                         </span>
                       )}
                       {app.expo?.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin size={13} /> {app.expo.location}
+                        <span className="flex items-center gap-1.5">
+                          <MapPin size={13} className="text-blue-600" /> {app.expo.location}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <Badge
                       variant={
                         app.applicationStatus === 'approved'
@@ -92,6 +115,7 @@ export default function MyApplicationsPage() {
                           ? 'danger'
                           : 'warning'
                       }
+                      dot
                     >
                       {app.applicationStatus}
                     </Badge>
@@ -99,21 +123,29 @@ export default function MyApplicationsPage() {
                     {app.applicationStatus === 'approved' && app.expo?._id && (
                       <Link
                         to={`/exhibitor/booth/${app.expo._id}`}
-                        className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold rounded-lg shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
                       >
-                        <Grid size={14} /> Reserve Booth
+                        <Grid size={14} /> Select / Manage 2D Booth
                       </Link>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-xs">
-                  <div className="font-semibold text-gray-800">Company: {app.company}</div>
-                  {app.description && <p className="text-gray-600">{app.description}</p>}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/70 space-y-2 text-xs">
+                  <div className="font-bold text-slate-900 flex items-center gap-2">
+                    <PackageCheck size={15} className="text-blue-600" />
+                    <span>Showcased Company: {app.company}</span>
+                  </div>
+                  {app.description && (
+                    <p className="text-slate-600 leading-relaxed">{app.description}</p>
+                  )}
                   {app.products && app.products.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
+                    <div className="flex flex-wrap gap-1.5 pt-1">
                       {app.products.map((p, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-white border border-gray-200 rounded text-gray-700">
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-semibold text-slate-700"
+                        >
                           {p}
                         </span>
                       ))}
@@ -122,7 +154,7 @@ export default function MyApplicationsPage() {
                 </div>
 
                 {app.rejectionReason && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
                     <strong>Organizer Feedback:</strong> {app.rejectionReason}
                   </div>
                 )}
@@ -134,4 +166,3 @@ export default function MyApplicationsPage() {
     </DashboardLayout>
   )
 }
-

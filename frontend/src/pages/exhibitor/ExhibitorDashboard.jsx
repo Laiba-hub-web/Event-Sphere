@@ -4,7 +4,6 @@ import {
   Layers,
   Store,
   Grid,
-  MessageSquare,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -45,12 +44,12 @@ export default function ExhibitorDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* B2B Exhibitor Hero Banner */}
-        <div className="relative rounded-3xl bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 text-white p-7 sm:p-9 overflow-hidden shadow-xl border border-purple-800/40">
-          <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-purple-500/25 blur-3xl pointer-events-none" />
+        {/* B2B Exhibitor Hero Banner - Unified Executive Navy/Slate Palette */}
+        <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-7 sm:p-9 overflow-hidden shadow-xl border border-slate-800">
+          <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-purple-300 text-xs font-bold uppercase tracking-wider mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-blue-300 text-xs font-bold uppercase tracking-wider mb-3">
                 <Sparkles size={13} className="text-amber-400" />
                 <span>B2B Exhibitor Showcase Portal</span>
               </div>
@@ -65,7 +64,7 @@ export default function ExhibitorDashboard() {
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
                 to="/expos"
-                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-600/30 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-600/30 transition-all"
               >
                 <Store size={18} />
                 Apply to More Expos
@@ -100,7 +99,7 @@ export default function ExhibitorDashboard() {
             label="Assigned Floor Booths"
             value={assignedBooths}
             icon={Grid}
-            variant="purple"
+            variant="info"
             subtitle="Active 2D hall units"
           />
           <StatCard
@@ -125,7 +124,7 @@ export default function ExhibitorDashboard() {
             </div>
             <Link
               to="/exhibitor/applications"
-              className="text-xs font-bold text-purple-600 hover:text-purple-700 inline-flex items-center gap-1.5 bg-purple-50 px-3.5 py-2 rounded-xl"
+              className="text-xs font-bold text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 bg-primary-50 px-3.5 py-2 rounded-xl"
             >
               View All Applications <ArrowRight size={14} />
             </Link>
@@ -144,7 +143,7 @@ export default function ExhibitorDashboard() {
               </p>
               <Link
                 to="/expos"
-                className="px-4 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold"
+                className="px-4 py-2.5 bg-primary-600 text-white rounded-xl text-xs font-bold"
               >
                 Browse Upcoming Expos
               </Link>
@@ -188,13 +187,13 @@ export default function ExhibitorDashboard() {
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-800">{app.company}</div>
                         <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                          <PackageCheck size={12} className="text-purple-500" />
+                          <PackageCheck size={12} className="text-primary-600" />
                           <span>{(app.products || []).length} Products Listed</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {app.booth ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-extrabold">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 text-xs font-extrabold">
                             <Grid size={12} />
                             Booth {app.booth.number || 'Assigned'}
                           </span>
@@ -220,7 +219,7 @@ export default function ExhibitorDashboard() {
                         {app.applicationStatus === 'approved' && app.expo?._id && (
                           <Link
                             to={`/exhibitor/booth/${app.expo._id}`}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-xs transition-colors"
                           >
                             <Grid size={13} />
                             {app.booth ? 'Manage Booth' : 'Reserve 2D Booth'}

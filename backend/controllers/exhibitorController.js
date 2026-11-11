@@ -218,16 +218,22 @@ const updateProfile = async (req, res, next) => {
 // ─── @access  Public / Private
 const getExhibitorsByExpo = async (req, res, next) => {
   try {
-    let exhibitors = await ExhibitorProfile.find({
-      expo: req.params.expoId,
-      applicationStatus: 'approved',
-    })
-      .populate('user', 'name email avatar')
-      .sort({ company: 1 });
+    const filter = { expo: req.params.expoId };
+    if (req.query.includeAll !== 'true' && req.query.all !== 'true') {
+      filter.applicationStatus = 'approved';
+    }
 
-    // If requested for Admin assignment (?all=true) or if this expo has no exhibitors yet,
+    let exhibitors = await ExhibitorProfile.find(filter)
+      .populate('user', 'name email avatar')
+      .sort({ createdAt: -1, company: 1 });
+
+    // If requested for Admin assignment (?all=true / ?includeAll=true) or if this expo has no exhibitors yet,
     // include all registered exhibitor companies across the platform (deduplicated by user)
-    if (req.query.all === 'true' || exhibitors.length === 0) {
+    if (
+      req.query.all === 'true' ||
+      req.query.includeAll === 'true' ||
+      exhibitors.length === 0
+    ) {
       const allProfiles = await ExhibitorProfile.find({})
         .populate('user', 'name email avatar')
         .sort({ company: 1 });
@@ -270,6 +276,7 @@ const getExhibitorsByExpo = async (req, res, next) => {
       success: true,
       count: exhibitors.length,
       exhibitors,
+      applications: exhibitors,
     });
   } catch (err) {
     next(err);

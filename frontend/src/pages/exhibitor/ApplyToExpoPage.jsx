@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-hot-toast'
-import { ArrowLeft, Store, Loader2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { expoService, exhibitorService } from '../../api/services'
@@ -33,6 +33,7 @@ export default function ApplyToExpoPage() {
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expoId])
 
   const loadData = async () => {
@@ -73,7 +74,7 @@ export default function ApplyToExpoPage() {
         services: data.services ? data.services.split(',').map((s) => s.trim()) : [],
       }
       await exhibitorService.apply(expoId, payload)
-      toast.success('Exhibitor application submitted for review!')
+      toast.success('Exhibitor application submitted for organizer review!')
       navigate('/exhibitor/applications')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit application')
@@ -86,7 +87,7 @@ export default function ApplyToExpoPage() {
     return (
       <DashboardLayout>
         <div className="py-20 flex justify-center">
-          <LoadingSpinner text="Preparing application..." />
+          <LoadingSpinner text="Preparing exhibitor application..." />
         </div>
       </DashboardLayout>
     )
@@ -94,118 +95,138 @@ export default function ApplyToExpoPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft size={14} /> Back
         </button>
 
-        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-200">
-          <div className="mb-6">
-            <span className="text-xs font-semibold text-primary-600 uppercase tracking-widest">
-              Exhibitor Application
-            </span>
-            <h1 className="text-2xl font-bold text-gray-900 mt-1">Apply to Exhibit</h1>
-            <p className="text-sm text-gray-500">
-              Event: <span className="font-semibold text-gray-800">{expo?.title}</span>
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200/90">
+          <div className="mb-6 pb-5 border-b border-slate-100">
+            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-blue-600 mb-1">
+              <Sparkles size={13} /> Official B2B Exhibitor Application
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">
+              Apply to Exhibit at {expo?.title}
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Your existing company profile has been pre-filled below. Once approved, you can reserve your booth on the 2D floor plan.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-gray-700">Company / Organization Name</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                Company / Brand Name
+              </label>
               <input
                 type="text"
                 {...register('company', { required: 'Company name is required' })}
                 placeholder="e.g. Apex Quantum Solutions"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
               />
               {errors.company && (
-                <p className="text-xs text-red-600 mt-0.5">{errors.company.message}</p>
+                <p className="text-xs text-rose-600 mt-1">{errors.company.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700">Company Overview & Pitch</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                Executive Company Overview &amp; Booth Showcase Pitch
+              </label>
               <textarea
-                rows={3}
+                rows={4}
                 {...register('description')}
-                placeholder="Brief summary of what your company showcases at this trade show..."
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Describe what hardware, software, or live demos your team will showcase..."
+                className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Products (comma-separated)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Showcased Products (comma-separated)
+                </label>
                 <input
                   type="text"
                   {...register('products')}
-                  placeholder="Robotics, AI Core, Sensors"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="LiDAR-X9 Sensor, NeuralEdge Node"
+                  className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Services (comma-separated)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  B2B Services (comma-separated)
+                </label>
                 <input
                   type="text"
                   {...register('services')}
-                  placeholder="Consulting, Cloud Integration"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="Enterprise Integration, Custom Robotics"
+                  className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Website URL</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Official Website URL
+                </label>
                 <input
                   type="url"
                   {...register('website')}
-                  placeholder="https://example.com"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="https://company.com"
+                  className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Contact Email</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  B2B Contact Email
+                </label>
                 <input
                   type="email"
                   {...register('contactEmail')}
                   placeholder="expo@company.com"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Contact Phone</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Contact Phone
+                </label>
                 <input
                   type="text"
                   {...register('contactPhone')}
                   placeholder="+1 (555) 000-0000"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-xs font-medium"
+                className="px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-1.5 px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-semibold shadow disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50"
               >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
-                Submit Application
+                {submitting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={15} />
+                )}
+                Submit Official Application
               </button>
             </div>
           </form>
@@ -214,4 +235,3 @@ export default function ApplyToExpoPage() {
     </DashboardLayout>
   )
 }
-

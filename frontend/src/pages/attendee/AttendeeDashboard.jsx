@@ -51,12 +51,12 @@ export default function AttendeeDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* VIP Attendee Hero Banner */}
-        <div className="relative rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 text-white p-7 sm:p-9 overflow-hidden shadow-xl border border-emerald-800/40">
-          <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
+        {/* VIP Attendee Hero Banner - Unified Executive Navy/Slate Palette */}
+        <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-7 sm:p-9 overflow-hidden shadow-xl border border-slate-800">
+          <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-blue-300 text-xs font-bold uppercase tracking-wider mb-3">
                 <Sparkles size={13} className="text-amber-400" />
                 <span>VIP Attendee Experience Hub</span>
               </div>
@@ -71,7 +71,7 @@ export default function AttendeeDashboard() {
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
                 to="/expos"
-                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-600/30 transition-all"
               >
                 <Briefcase size={18} />
                 Discover Expos
@@ -213,7 +213,7 @@ export default function AttendeeDashboard() {
         {selectedPass && (
           <div className="space-y-5">
             <div className="rounded-3xl overflow-hidden border-2 border-slate-900 bg-white shadow-xl">
-              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 text-center">
+              <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 text-center">
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-extrabold uppercase tracking-widest mb-2">
                   <ShieldCheck size={12} /> Verified All-Access Credential
                 </div>
