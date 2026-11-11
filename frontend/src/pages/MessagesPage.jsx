@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Send, MessageSquare, User, Search, Loader2 } from 'lucide-react'
+import {
+  Send,
+  MessageSquare,
+  Search,
+  Sparkles,
+  CheckCheck,
+  Circle,
+  ShieldCheck,
+  Store,
+  Ticket,
+} from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
@@ -7,10 +17,20 @@ import { messageService } from '../api/services'
 import { useAuth } from '../hooks/useAuth'
 import { useSocket } from '../hooks/useSocket'
 
+const QUICK_REPLIES = [
+  'Hi! Could you share your B2B product brochure and booth schedule?',
+  'We would love to book a 15-minute live hardware demo at your booth.',
+  'Are there still corner booths available on the main exhibition floor?',
+  'Thank you! Looking forward to meeting at the keynote hall.',
+]
+
 export default function MessagesPage() {
   const { user } = useAuth()
-  const socket = useSocket()
+  const rawSocket = useSocket()
+  const socket = rawSocket?.socket !== undefined ? rawSocket.socket : rawSocket
+
   const [conversations, setConversations] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [activePartner, setActivePartner] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMsg, setNewMsg] = useState('')
@@ -20,54 +40,68 @@ export default function MessagesPage() {
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
-    loadConversations()
+    loadConversations(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Listen for socket real-time messages
+  // Listen for socket real-time messages safely
   useEffect(() => {
-    if (!socket) return
+    if (!socket || typeof socket.on !== 'function') return
 
     const handleIncomingMessage = (incoming) => {
-      // If the incoming message belongs to current thread, append
+      const senderId = incoming?.sender?._id || incoming?.sender
+      const receiverId = incoming?.receiver?._id || incoming?.receiver
+
       if (
         activePartner &&
-        (incoming.sender._id === activePartner._id || incoming.receiver._id === activePartner._id)
+        (senderId === activePartner._id || receiverId === activePartner._id)
       ) {
-        setMessages((prev) => [...prev, incoming])
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === incoming._id)) return prev
+          return [...prev, incoming]
+        })
       }
-      // Refresh conversations list to update previews
-      loadConversations()
+      loadConversations(false)
     }
 
     socket.on('receiveMessage', handleIncomingMessage)
     return () => {
-      socket.off('receiveMessage', handleIncomingMessage)
+      if (typeof socket.off === 'function') {
+        socket.off('receiveMessage', handleIncomingMessage)
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, activePartner])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const loadConversations = async () => {
+  const loadConversations = async (autoSelectFirst = false) => {
     try {
-      setLoadingConv(true)
+      if (autoSelectFirst) setLoadingConv(true)
       const res = await messageService.getConversations()
-      setConversations(res.data.conversations || [])
+      const convList = res.data.conversations || []
+      setConversations(convList)
+
+      if (autoSelectFirst && convList.length > 0 && !activePartner) {
+        selectPartner(convList[0].user)
+      }
     } catch (err) {
       console.error(err)
     } finally {
-      setLoadingConv(false)
+      if (autoSelectFirst) setLoadingConv(false)
     }
   }
 
   const selectPartner = async (partner) => {
+    if (!partner?._id) return
     setActivePartner(partner)
     try {
       setLoadingThread(true)
       const res = await messageService.getThread(partner._id)
       setMessages(res.data.messages || [])
-      loadConversations()
+      loadConversations(false)
     } catch (err) {
       toast.error('Failed to load message thread')
     } finally {
@@ -75,28 +109,25 @@ export default function MessagesPage() {
     }
   }
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault()
-    if (!newMsg.trim() || !activePartner) return
+  const handleSendMessage = async (e, customText) => {
+    if (e) e.preventDefault()
+    const content = (customText ?? newMsg).trim()
+    if (!content || !activePartner) return
 
     setSending(true)
-    const content = newMsg.trim()
-    setNewMsg('')
+    if (!customText) setNewMsg('')
 
     try {
-      if (socket && socket.connected) {
-        socket.emit('sendMessage', {
-          receiverId: activePartner._id,
-          content,
-        })
-      } else {
-        const res = await messageService.send({
-          receiverId: activePartner._id,
-          content,
-        })
-        setMessages((prev) => [...prev, res.data.message])
-      }
-      loadConversations()
+      const res = await messageService.send({
+        receiverId: activePartner._id,
+        content,
+      })
+      const savedMsg = res.data.message
+      setMessages((prev) => {
+        if (prev.some((m) => m._id === savedMsg._id)) return prev
+        return [...prev, savedMsg]
+      })
+      loadConversations(false)
     } catch (err) {
       toast.error('Failed to send message')
     } finally {
@@ -104,35 +135,100 @@ export default function MessagesPage() {
     }
   }
 
+  const filteredConversations = conversations.filter((c) => {
+    if (!searchTerm.trim()) return true
+    const q = searchTerm.toLowerCase()
+    return (
+      c.user?.name?.toLowerCase().includes(q) ||
+      c.user?.role?.toLowerCase().includes(q) ||
+      c.lastMessage?.content?.toLowerCase().includes(q)
+    )
+  })
+
+  const getRoleBadge = (role) => {
+    if (role === 'admin') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">
+          <ShieldCheck size={10} /> Organizer
+        </span>
+      )
+    }
+    if (role === 'exhibitor') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase">
+          <Store size={10} /> Exhibitor
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+        <Ticket size={10} /> Attendee
+      </span>
+    )
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Direct Messages & Inquiries</h1>
-          <p className="text-sm text-gray-500">
-            Real-time chat with event organizers, exhibitors, and attendees.
-          </p>
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-primary-600 mb-1">
+              <Sparkles size={13} /> Real-Time B2B &amp; Support Inbox
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">
+              Direct Messages &amp; Exhibitor Inquiries
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Communicate directly with trade show organizers, booth exhibitors, and VIP delegates.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl self-start sm:self-auto">
+            <Circle size={8} className="fill-emerald-500 text-emerald-500 animate-pulse" />
+            <span>Live Messaging Active</span>
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row h-[650px]">
-          {/* Left: Conversations list */}
-          <div className="w-full md:w-80 border-r border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200 font-bold text-sm text-gray-800">
-              Conversations ({conversations.length})
+        {/* Main Split Chat Container */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/90 overflow-hidden flex flex-col lg:flex-row h-[680px]">
+          {/* Left: Conversations List */}
+          <div className="w-full lg:w-96 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-slate-50/50">
+            <div className="p-4 border-b border-slate-200 space-y-3 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-sm text-slate-900">
+                  Active Threads ({conversations.length})
+                </span>
+              </div>
+              <div className="relative">
+                <Search
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search contacts or messages..."
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-primary-500 outline-none"
+                />
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
               {loadingConv ? (
-                <div className="py-12 flex justify-center">
-                  <LoadingSpinner size="sm" text="Loading chats..." />
+                <div className="py-16 flex justify-center">
+                  <LoadingSpinner size="sm" text="Loading conversations..." />
                 </div>
-              ) : conversations.length === 0 ? (
-                <div className="p-6 text-center text-xs text-gray-400">
-                  <MessageSquare size={32} className="mx-auto mb-2 text-gray-300" />
-                  No message history yet. Connect with exhibitors from expo pages.
+              ) : filteredConversations.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400">
+                  <MessageSquare size={36} className="mx-auto mb-2.5 text-slate-300" />
+                  <p className="font-bold text-slate-700 text-sm">No conversations found</p>
+                  <p className="mt-1">
+                    Open any Expo page and click &ldquo;Message&rdquo; on an Exhibitor card to start a B2B inquiry.
+                  </p>
                 </div>
               ) : (
-                conversations.map((c) => {
+                filteredConversations.map((c) => {
                   const partner = c.user
                   const isSelected = activePartner?._id === partner?._id
 
@@ -141,23 +237,23 @@ export default function MessagesPage() {
                       key={partner?._id || Math.random()}
                       type="button"
                       onClick={() => selectPartner(partner)}
-                      className={`w-full p-4 flex items-center gap-3 text-left transition-colors ${
-                        isSelected ? 'bg-primary-50' : 'hover:bg-gray-50'
+                      className={`w-full p-4 flex items-start gap-3.5 text-left transition-all ${
+                        isSelected
+                          ? 'bg-primary-50/90 border-l-4 border-l-primary-600'
+                          : 'hover:bg-white'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs">
                         {partner?.name ? partner.name[0].toUpperCase() : 'U'}
                       </div>
                       <div className="overflow-hidden flex-1">
-                        <div className="flex justify-between items-baseline">
-                          <span className="font-semibold text-xs text-gray-900 truncate">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="font-extrabold text-xs text-slate-900 truncate">
                             {partner?.name}
                           </span>
-                          <span className="text-[10px] text-gray-400 capitalize">
-                            {partner?.role}
-                          </span>
+                          {getRoleBadge(partner?.role)}
                         </div>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                        <p className="text-xs text-slate-500 truncate mt-1.5">
                           {c.lastMessage?.content}
                         </p>
                       </div>
@@ -174,34 +270,41 @@ export default function MessagesPage() {
           </div>
 
           {/* Right: Active Chat Thread */}
-          <div className="flex-1 flex flex-col justify-between bg-gray-50">
+          <div className="flex-1 flex flex-col justify-between bg-slate-50/60">
             {activePartner ? (
               <>
-                {/* Header */}
-                <div className="p-4 bg-white border-b border-gray-200 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-xs">
-                    {activePartner.name ? activePartner.name[0].toUpperCase() : 'U'}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-gray-900">{activePartner.name}</h3>
-                    <span className="text-xs text-gray-500 capitalize">{activePartner.role}</span>
+                {/* Partner Header */}
+                <div className="p-4 sm:px-6 bg-white border-b border-slate-200 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
+                      {activePartner.name ? activePartner.name[0].toUpperCase() : 'U'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-extrabold text-sm text-slate-900">
+                          {activePartner.name}
+                        </h3>
+                        {getRoleBadge(activePartner.role)}
+                      </div>
+                      <span className="text-xs text-slate-500">{activePartner.email}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Message bubbles */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                {/* Message Bubbles */}
+                <div className="flex-1 p-5 sm:p-6 overflow-y-auto space-y-4">
                   {loadingThread ? (
                     <div className="py-20 flex justify-center">
-                      <LoadingSpinner size="sm" text="Fetching messages..." />
+                      <LoadingSpinner size="sm" text="Fetching message history..." />
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="text-center py-20 text-xs text-gray-400">
-                      Say hello to start the conversation!
+                    <div className="text-center py-16 text-xs text-slate-400">
+                      Send a message or click a quick inquiry pill below to start the conversation!
                     </div>
                   ) : (
                     messages.map((m) => {
-                      const isMe =
-                        m.sender?._id === user?._id || m.sender === user?._id
+                      const senderId = m.sender?._id || m.sender
+                      const isMe = senderId === user?._id
 
                       return (
                         <div
@@ -209,20 +312,23 @@ export default function MessagesPage() {
                           className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                         >
                           <div
-                            className={`max-w-xs sm:max-w-md px-4 py-2.5 rounded-2xl text-xs ${
+                            className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl text-xs leading-relaxed ${
                               isMe
-                                ? 'bg-primary-600 text-white rounded-br-none'
-                                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-xs'
+                                ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-br-xs shadow-sm'
+                                : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs shadow-xs'
                             }`}
                           >
                             {m.content}
                           </div>
-                          <span className="text-[10px] text-gray-400 mt-1 px-1">
-                            {new Date(m.createdAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1 px-1">
+                            <span>
+                              {new Date(m.createdAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                            {isMe && <CheckCheck size={12} className="text-primary-500" />}
+                          </div>
                         </div>
                       )
                     })
@@ -230,33 +336,54 @@ export default function MessagesPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
-                <form
-                  onSubmit={handleSendMessage}
-                  className="p-3 bg-white border-t border-gray-200 flex items-center gap-2"
-                >
-                  <input
-                    type="text"
-                    value={newMsg}
-                    onChange={(e) => setNewMsg(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-primary-500 focus:border-primary-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newMsg.trim() || sending}
-                    className="p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 transition-colors"
-                  >
-                    <Send size={16} />
-                  </button>
-                </form>
+                {/* Quick Reply Templates + Input Bar */}
+                <div className="bg-white border-t border-slate-200 p-3 sm:p-4 space-y-2.5">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">
+                      Quick Prompts:
+                    </span>
+                    {QUICK_REPLIES.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSendMessage(null, prompt)}
+                        disabled={sending}
+                        className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-600 text-[11px] font-medium whitespace-nowrap transition-colors shrink-0"
+                      >
+                        {prompt.length > 48 ? prompt.slice(0, 48) + '...' : prompt}
+                      </button>
+                    ))}
+                  </div>
+
+                  <form onSubmit={(e) => handleSendMessage(e)} className="flex items-center gap-2.5">
+                    <input
+                      type="text"
+                      value={newMsg}
+                      onChange={(e) => setNewMsg(e.target.value)}
+                      placeholder={`Write a message to ${activePartner.name}...`}
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-primary-500 outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMsg.trim() || sending}
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold disabled:opacity-50 transition-colors shadow-xs"
+                    >
+                      <span>Send</span>
+                      <Send size={14} />
+                    </button>
+                  </form>
+                </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-400">
-                <MessageSquare size={48} className="text-gray-300 mb-3" />
-                <h3 className="font-semibold text-sm text-gray-700">Select a Conversation</h3>
-                <p className="text-xs text-gray-400 max-w-xs mt-1">
-                  Choose a contact from the left list to start messaging in real-time.
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+                <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4">
+                  <MessageSquare size={32} />
+                </div>
+                <h3 className="font-extrabold text-base text-slate-800">
+                  Select a Conversation Thread
+                </h3>
+                <p className="text-xs text-slate-500 max-w-xs mt-1 leading-relaxed">
+                  Choose a contact from the left panel to view your message history and chat in real time.
                 </p>
               </div>
             )}
@@ -266,4 +393,3 @@ export default function MessagesPage() {
     </DashboardLayout>
   )
 }
-

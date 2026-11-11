@@ -20,3 +20,4 @@ echo.
 echo All EventSphere servers have been stopped cleanly.
 echo.
 pause
+
