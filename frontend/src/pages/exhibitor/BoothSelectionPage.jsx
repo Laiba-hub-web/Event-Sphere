@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Grid, CheckCircle2, ShieldCheck, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Sparkles, Loader2, Compass, Mic2, Coffee } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Modal from '../../components/ui/Modal'
@@ -20,6 +20,7 @@ export default function BoothSelectionPage() {
 
   useEffect(() => {
     loadBooths()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expoId])
 
   const loadBooths = async () => {
@@ -72,7 +73,7 @@ export default function BoothSelectionPage() {
     return (
       <DashboardLayout>
         <div className="py-20 flex justify-center">
-          <LoadingSpinner text="Loading booth allocation grid..." />
+          <LoadingSpinner text="Loading interactive 2D booth grid..." />
         </div>
       </DashboardLayout>
     )
@@ -81,108 +82,129 @@ export default function BoothSelectionPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs">
           <button
             onClick={() => navigate('/exhibitor/applications')}
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 mb-2 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-2 transition-colors"
           >
             <ArrowLeft size={14} /> Back to Applications
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Select Your Exhibition Booth</h1>
-          <p className="text-sm text-gray-500">{expo?.title}</p>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            Select Your Exhibition Floor Booth
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{expo?.title}</p>
         </div>
 
         {/* Current status banner */}
         {myBooth ? (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 sm:p-5 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <CheckCircle2 size={24} className="text-emerald-600" />
+              <CheckCircle2 size={24} className="text-emerald-600 shrink-0" />
               <div>
-                <p className="font-bold text-emerald-900 text-sm">
+                <p className="font-extrabold text-emerald-950 text-sm">
                   You have reserved Booth {myBooth.number} ({myBooth.size})
                 </p>
-                <p className="text-xs text-emerald-700">
-                  Status: <span className="capitalize">{myBooth.status}</span> · Price: ${myBooth.price || 0}
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  Status: <span className="capitalize font-bold">{myBooth.status}</span> &bull; Rate: ${myBooth.price || 0} USD
                 </p>
               </div>
             </div>
             <button
               onClick={() => handleRelease(myBooth._id)}
-              className="px-3 py-1.5 text-xs font-semibold bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+              className="px-4 py-2 text-xs font-bold bg-white text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 shrink-0 self-start sm:self-auto"
             >
               Change / Release Booth
             </button>
           </div>
         ) : (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 text-xs text-blue-900">
-            <Sparkles size={18} className="text-blue-600" />
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-xs font-medium text-blue-900">
+            <Sparkles size={18} className="text-blue-600 shrink-0" />
             <span>
-              Click any green (Available) booth cell to view dimensions, amenities, and reserve your spot.
+              Tap any green (Available) booth cell below to inspect dimensions, amenities, and reserve your company showcase unit.
             </span>
           </div>
         )}
 
         {/* Visual Grid */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex gap-4 font-medium">
+        <div className="bg-slate-900 p-4 sm:p-7 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
+            <div className="flex flex-wrap gap-3 sm:gap-5 font-bold">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-emerald-500"></span> Available
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Available
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-amber-500"></span> Reserved
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Reserved
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-red-500"></span> Occupied
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Occupied
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-purple-600"></span> Your Booth
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Your Booth
               </span>
             </div>
           </div>
 
-          <div
-            className="grid gap-3 p-4 bg-gray-100 rounded-xl overflow-x-auto"
-            style={{
-              gridTemplateColumns: `repeat(${expo?.boothColumns || 8}, minmax(80px, 1fr))`,
-            }}
-          >
-            {booths.map((booth) => {
-              const isMine =
-                booth.exhibitor?._id === user?._id || booth.exhibitor === user?._id
-              const isAvail = booth.status === 'available'
+          {/* Hall Landmarks */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-bold text-slate-300">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-2.5 flex items-center justify-center gap-2">
+              <Compass size={15} className="text-blue-400" />
+              <span>NORTH MAIN ENTRANCE</span>
+            </div>
+            <div className="bg-indigo-950/80 border border-indigo-800/70 rounded-xl p-2.5 flex items-center justify-center gap-2 text-indigo-200">
+              <Mic2 size={15} className="text-indigo-400" />
+              <span>KEYNOTE AUDITORIUM</span>
+            </div>
+            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-2.5 flex items-center justify-center gap-2">
+              <Coffee size={15} className="text-amber-400" />
+              <span>VIP B2B LOUNGE</span>
+            </div>
+          </div>
 
-              let style = isAvail
-                ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-900 cursor-pointer'
-                : booth.status === 'reserved'
-                ? 'bg-amber-50 border-amber-300 text-amber-800 cursor-not-allowed opacity-80'
-                : 'bg-red-50 border-red-300 text-red-800 cursor-not-allowed opacity-80'
+          <div className="w-full overflow-x-auto pb-2">
+            <div
+              className="grid gap-3 p-4 bg-slate-950/70 rounded-2xl border border-slate-800 min-w-[680px]"
+              style={{
+                gridTemplateColumns: `repeat(${expo?.boothColumns || 8}, minmax(95px, 1fr))`,
+              }}
+            >
+              {booths.map((booth) => {
+                const isMine =
+                  booth.exhibitor?._id === user?._id || booth.exhibitor === user?._id
+                const isAvail = booth.status === 'available'
 
-              if (isMine) {
-                style = 'bg-purple-100 border-purple-500 text-purple-900 ring-2 ring-purple-500'
-              }
+                let style = isAvail
+                  ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/50 text-emerald-200 cursor-pointer'
+                  : booth.status === 'reserved'
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-200 cursor-not-allowed opacity-75'
+                  : 'bg-rose-500/15 border-rose-500/40 text-rose-200 cursor-not-allowed opacity-75'
 
-              return (
-                <button
-                  type="button"
-                  key={booth._id}
-                  disabled={!isAvail && !isMine}
-                  onClick={() => isAvail && setSelectedBooth(booth)}
-                  className={`h-20 border-2 rounded-lg p-2 flex flex-col justify-between items-center text-center transition-all ${style}`}
-                >
-                  <div className="flex justify-between w-full text-[10px] font-bold">
-                    <span>{booth.number}</span>
-                    <span className="capitalize">{booth.size}</span>
-                  </div>
-                  <div className="text-xs font-semibold truncate max-w-[70px]">
-                    {isMine ? 'YOUR BOOTH' : booth.status}
-                  </div>
-                  <div className="text-[10px] text-gray-500">
-                    {booth.price ? `$${booth.price}` : 'Free'}
-                  </div>
-                </button>
-              )
-            })}
+                if (isMine) {
+                  style =
+                    'bg-purple-600/30 border-purple-400 text-white ring-2 ring-purple-400 shadow-lg'
+                }
+
+                return (
+                  <button
+                    type="button"
+                    key={booth._id}
+                    disabled={!isAvail && !isMine}
+                    onClick={() => isAvail && setSelectedBooth(booth)}
+                    className={`h-24 border-2 rounded-xl p-2.5 flex flex-col justify-between items-center text-center transition-all ${style}`}
+                  >
+                    <div className="flex justify-between w-full text-[10px] font-extrabold">
+                      <span className="px-1.5 py-0.5 rounded bg-black/30">{booth.number}</span>
+                      <span className="uppercase">{booth.size}</span>
+                    </div>
+                    <div className="text-xs font-bold truncate max-w-[85px]">
+                      {isMine ? 'YOUR BOOTH' : booth.exhibitorProfile?.company || booth.status}
+                    </div>
+                    <div className="text-[10px] opacity-80">
+                      {booth.price ? `$${booth.price}` : 'Included'}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -194,23 +216,24 @@ export default function BoothSelectionPage() {
         title={`Reserve Booth ${selectedBooth?.number}`}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Confirm your reservation for booth <strong className="text-gray-900">{selectedBooth?.number}</strong>.
+          <p className="text-sm text-slate-600">
+            Confirm your reservation for booth{' '}
+            <strong className="text-slate-900">{selectedBooth?.number}</strong>.
           </p>
 
-          <div className="p-3 bg-gray-50 rounded-lg space-y-2 text-xs">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-gray-500">Size:</span>
-              <span className="font-semibold capitalize">{selectedBooth?.size}</span>
+              <span className="text-slate-500">Dimensions Tier:</span>
+              <span className="font-bold capitalize text-slate-900">{selectedBooth?.size}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Fee:</span>
-              <span className="font-semibold">${selectedBooth?.price || 0} USD</span>
+              <span className="text-slate-500">Exhibition Rate:</span>
+              <span className="font-bold text-emerald-700">${selectedBooth?.price || 0} USD</span>
             </div>
             {selectedBooth?.notes && (
               <div className="flex justify-between">
-                <span className="text-gray-500">Location note:</span>
-                <span className="font-semibold">{selectedBooth.notes}</span>
+                <span className="text-slate-500">Location Note:</span>
+                <span className="font-semibold text-slate-800">{selectedBooth.notes}</span>
               </div>
             )}
           </div>
@@ -219,7 +242,7 @@ export default function BoothSelectionPage() {
             <button
               type="button"
               onClick={() => setSelectedBooth(null)}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-xs font-medium"
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold"
             >
               Cancel
             </button>
@@ -227,7 +250,7 @@ export default function BoothSelectionPage() {
               type="button"
               disabled={reserving}
               onClick={handleReserve}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold disabled:opacity-50"
             >
               {reserving && <Loader2 size={14} className="animate-spin" />}
               Confirm Reservation
@@ -238,4 +261,3 @@ export default function BoothSelectionPage() {
     </DashboardLayout>
   )
 }
-

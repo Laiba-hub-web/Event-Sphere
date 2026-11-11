@@ -16,8 +16,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
-export default function Sidebar() {
-  const { user, isAdmin, isExhibitor, isAttendee } = useAuth()
+export default function Sidebar({ onNavigate }) {
+  const { user, isAdmin, isExhibitor } = useAuth()
 
   const adminLinks = [
     { label: 'Command Center', to: '/admin/dashboard', icon: LayoutDashboard },
@@ -54,7 +54,7 @@ export default function Sidebar() {
     : 'from-blue-600 to-emerald-600'
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-[calc(100vh-4rem)] flex flex-col justify-between py-6 px-4 select-none no-print">
+    <aside className="w-64 bg-slate-900 text-slate-300 min-h-[calc(100vh-4rem)] h-full flex flex-col justify-between py-6 px-4 select-none no-print">
       <div className="space-y-6">
         {/* Role Identity Card */}
         <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/70 space-y-3">
@@ -63,16 +63,16 @@ export default function Sidebar() {
               <img
                 src={user.avatar}
                 alt={user.name}
-                className="w-11 h-11 rounded-xl object-cover ring-2 ring-blue-500/40"
+                className="w-11 h-11 rounded-xl object-cover ring-2 ring-blue-500/40 shrink-0"
               />
             ) : (
               <div
-                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${roleColor} text-white flex items-center justify-center font-extrabold text-base shadow-md`}
+                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${roleColor} text-white flex items-center justify-center font-extrabold text-base shadow-md shrink-0`}
               >
                 {user?.name ? user.name[0].toUpperCase() : 'U'}
               </div>
             )}
-            <div className="overflow-hidden">
+            <div className="overflow-hidden min-w-0">
               <p className="text-sm font-bold text-white truncate">{user?.name}</p>
               <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
             </div>
@@ -100,6 +100,7 @@ export default function Sidebar() {
                   key={item.to}
                   to={item.to}
                   end={item.to === '/admin/expos'}
+                  onClick={() => onNavigate && onNavigate()}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive
@@ -108,8 +109,8 @@ export default function Sidebar() {
                     }`
                   }
                 >
-                  <Icon size={17} />
-                  <span>{item.label}</span>
+                  <Icon size={17} className="shrink-0" />
+                  <span className="truncate">{item.label}</span>
                 </NavLink>
               )
             })}
@@ -118,7 +119,7 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom Quick Promo Card */}
-      <div className="space-y-4">
+      <div className="space-y-4 pt-6">
         <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/90 to-indigo-950/90 border border-blue-800/40 space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-blue-300">
             <Sparkles size={14} /> Live Expo Catalog
@@ -128,6 +129,7 @@ export default function Sidebar() {
           </p>
           <Link
             to="/expos"
+            onClick={() => onNavigate && onNavigate()}
             className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-white hover:text-blue-300 transition-colors"
           >
             Open Public Directory <ExternalLink size={12} />

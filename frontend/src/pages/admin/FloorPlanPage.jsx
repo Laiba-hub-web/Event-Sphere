@@ -2,21 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
-  Grid,
-  CheckCircle2,
-  UserCheck,
-  Sparkles,
   Compass,
   Coffee,
   Mic2,
-  DollarSign,
-  Filter,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Modal from '../../components/ui/Modal'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
-import Badge from '../../components/ui/Badge'
 import { expoService, boothService, exhibitorService } from '../../api/services'
 
 export default function FloorPlanPage() {
@@ -38,6 +31,7 @@ export default function FloorPlanPage() {
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const loadData = async () => {
@@ -132,18 +126,18 @@ export default function FloorPlanPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+          <div className="min-w-0">
             <button
               onClick={() => navigate('/admin/expos')}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-2 transition-colors"
             >
               <ArrowLeft size={14} /> Back to Expo Portfolio
             </button>
-            <h1 className="text-2xl font-extrabold text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">
               Interactive 2D Floor Plan &amp; Booth Studio
             </h1>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 truncate">
               {expo?.title} &bull; {expo?.location}
             </p>
           </div>
@@ -172,7 +166,7 @@ export default function FloorPlanPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold border transition-all ${
                   statusFilter === tab.id
                     ? 'ring-2 ring-primary-500 shadow-xs ' + tab.color
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -185,10 +179,12 @@ export default function FloorPlanPage() {
         </div>
 
         {/* Occupancy Progress Bar */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex-1">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-              <span>Hall Space Utilization ({occupiedCount + reservedCount} of {booths.length} Booths Allocated)</span>
+              <span>
+                Hall Space Utilization ({occupiedCount + reservedCount} of {booths.length} Booths)
+              </span>
               <span className="text-primary-600">{occupancyPct}% Allocated</span>
             </div>
             <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -199,70 +195,72 @@ export default function FloorPlanPage() {
             </div>
           </div>
           <div className="text-xs text-slate-500 shrink-0">
-            Click any booth cell below to edit dimensions, pricing, or assign an exhibitor.
+            Tap any booth cell below to edit specs or assign an exhibitor.
           </div>
         </div>
 
         {/* Architectural 2D Floor Plan Blueprint */}
-        <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 space-y-6">
+        <div className="bg-slate-900 p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 space-y-5">
           {/* Top Hall Landmarks */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold text-slate-300">
-            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-3 flex items-center justify-center gap-2">
-              <Compass size={16} className="text-primary-400" />
-              <span>NORTH MAIN ENTRANCE &amp; QR CHECK-IN FOYER</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3 text-xs font-bold text-slate-300">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-3 flex items-center justify-center gap-2 text-center">
+              <Compass size={16} className="text-primary-400 shrink-0" />
+              <span>NORTH MAIN ENTRANCE &amp; QR FOYER</span>
             </div>
-            <div className="bg-indigo-950/80 border border-indigo-800/70 rounded-xl p-3 flex items-center justify-center gap-2 text-indigo-200">
-              <Mic2 size={16} className="text-indigo-400" />
+            <div className="bg-indigo-950/80 border border-indigo-800/70 rounded-xl p-3 flex items-center justify-center gap-2 text-indigo-200 text-center">
+              <Mic2 size={16} className="text-indigo-400 shrink-0" />
               <span>MAIN KEYNOTE AUDITORIUM &amp; STAGE A</span>
             </div>
-            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-3 flex items-center justify-center gap-2">
-              <Coffee size={16} className="text-amber-400" />
-              <span>VIP B2B NETWORKING LOUNGE &amp; MEDIA HUB</span>
+            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-3 flex items-center justify-center gap-2 text-center">
+              <Coffee size={16} className="text-amber-400 shrink-0" />
+              <span>VIP B2B NETWORKING LOUNGE</span>
             </div>
           </div>
 
-          {/* 2D Booth Grid */}
-          <div
-            className="grid gap-3 p-4 bg-slate-950/70 rounded-2xl border border-slate-800 overflow-x-auto min-h-[340px]"
-            style={{
-              gridTemplateColumns: `repeat(${expo?.boothColumns || 8}, minmax(95px, 1fr))`,
-            }}
-          >
-            {booths.map((booth) => {
-              const dimmed = statusFilter !== 'all' && booth.status !== statusFilter
-              const statusStyle =
-                booth.status === 'occupied'
-                  ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/50 text-rose-200'
-                  : booth.status === 'reserved'
-                  ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/50 text-amber-200'
-                  : 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/50 text-emerald-200'
+          {/* Dedicated Horizontal Scroll Wrapper so mobile/tablet scrolls smoothly */}
+          <div className="w-full overflow-x-auto pb-2">
+            <div
+              className="grid gap-3 p-4 bg-slate-950/70 rounded-2xl border border-slate-800 min-w-[680px]"
+              style={{
+                gridTemplateColumns: `repeat(${expo?.boothColumns || 8}, minmax(95px, 1fr))`,
+              }}
+            >
+              {booths.map((booth) => {
+                const dimmed = statusFilter !== 'all' && booth.status !== statusFilter
+                const statusStyle =
+                  booth.status === 'occupied'
+                    ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/50 text-rose-200'
+                    : booth.status === 'reserved'
+                    ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/50 text-amber-200'
+                    : 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/50 text-emerald-200'
 
-              return (
-                <button
-                  type="button"
-                  key={booth._id}
-                  onClick={() => openBoothModal(booth)}
-                  className={`h-24 border-2 rounded-xl p-2.5 flex flex-col justify-between items-center text-center transition-all hover:scale-[1.03] cursor-pointer ${statusStyle} ${
-                    dimmed ? 'opacity-25 scale-95' : ''
-                  }`}
-                >
-                  <div className="flex justify-between items-center w-full text-[10px] font-extrabold">
-                    <span className="px-1.5 py-0.5 rounded bg-black/30">{booth.number}</span>
-                    <span className="uppercase tracking-wider opacity-75">{booth.size}</span>
-                  </div>
-                  <div className="text-xs font-bold truncate max-w-[85px] text-white">
-                    {booth.exhibitorProfile?.company || (
-                      <span className="text-[10px] uppercase tracking-wider opacity-80">
-                        {booth.status}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] font-semibold opacity-80">
-                    {booth.price ? `$${booth.price}` : 'Included'}
-                  </div>
-                </button>
-              )
-            })}
+                return (
+                  <button
+                    type="button"
+                    key={booth._id}
+                    onClick={() => openBoothModal(booth)}
+                    className={`h-24 border-2 rounded-xl p-2.5 flex flex-col justify-between items-center text-center transition-all hover:scale-[1.03] cursor-pointer ${statusStyle} ${
+                      dimmed ? 'opacity-25 scale-95' : ''
+                    }`}
+                  >
+                    <div className="flex justify-between items-center w-full text-[10px] font-extrabold">
+                      <span className="px-1.5 py-0.5 rounded bg-black/30">{booth.number}</span>
+                      <span className="uppercase tracking-wider opacity-75">{booth.size}</span>
+                    </div>
+                    <div className="text-xs font-bold truncate max-w-[85px] text-white">
+                      {booth.exhibitorProfile?.company || (
+                        <span className="text-[10px] uppercase tracking-wider opacity-80">
+                          {booth.status}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] font-semibold opacity-80">
+                      {booth.price ? `$${booth.price}` : 'Included'}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -274,7 +272,7 @@ export default function FloorPlanPage() {
         title={`Configure Booth ${selectedBooth?.number}`}
       >
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
             <div>
               <span className="text-slate-500">Current Status:</span>
               <span className="ml-2 font-bold capitalize text-slate-900">
@@ -295,7 +293,7 @@ export default function FloorPlanPage() {
             <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
               Booth Dimensions &amp; Pricing
             </h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700">Booth Size Tier</label>
                 <select
@@ -352,7 +350,7 @@ export default function FloorPlanPage() {
             </h4>
 
             {selectedBooth?.status !== 'available' ? (
-              <div className="flex items-center justify-between p-4 bg-rose-50 border border-rose-200 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
                 <span className="text-xs font-medium text-rose-900">
                   Booth is currently <strong>{selectedBooth?.status}</strong>. Releasing will make it available on the floor plan.
                 </span>
@@ -360,7 +358,7 @@ export default function FloorPlanPage() {
                   type="button"
                   onClick={handleReleaseBooth}
                   disabled={updating}
-                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shrink-0 ml-3"
+                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shrink-0"
                 >
                   Release Booth
                 </button>
@@ -370,7 +368,7 @@ export default function FloorPlanPage() {
                 <label className="block text-xs font-bold text-slate-700">
                   Assign Directly to an Exhibitor Partner:
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <select
                     value={selectedExhibitorId}
                     onChange={(e) => setSelectedExhibitorId(e.target.value)}

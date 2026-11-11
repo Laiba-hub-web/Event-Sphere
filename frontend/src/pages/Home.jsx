@@ -581,7 +581,7 @@ export default function Home() {
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-4 mb-8">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -650,7 +650,7 @@ export default function Home() {
 
           {/* Role Switcher Tabs */}
           <div className="flex justify-center">
-            <div className="inline-flex p-1.5 rounded-2xl bg-slate-800 border border-slate-700 gap-2">
+            <div className="flex flex-wrap sm:inline-flex justify-center p-1.5 rounded-2xl bg-slate-800 border border-slate-700 gap-2 w-full sm:w-auto">
               {[
                 { id: 'organizer', label: '🛡️ Organizer & Admin Hub' },
                 { id: 'exhibitor', label: '🏪 Exhibitor B2B Portal' },
@@ -659,7 +659,7 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveRoleTab(tab.id)}
-                  className={`px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                     activeRoleTab === tab.id
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                       : 'text-slate-300 hover:text-white'

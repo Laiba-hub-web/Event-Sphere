@@ -412,7 +412,7 @@ export default function ExpoDetailPage() {
       {/* STICKY TABS BAR */}
       <div className="bg-white border-b border-slate-200 sticky top-16 z-30 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-2 sm:space-x-6 overflow-x-auto">
+          <nav className="flex space-x-2 sm:space-x-6 overflow-x-auto no-scrollbar">
             {[
               { id: 'overview', label: 'Overview & Venue' },
               { id: 'schedule', label: `Keynote Schedule (${sessions.length})` },
@@ -738,46 +738,48 @@ export default function ExpoDetailPage() {
             </div>
 
             {/* Booth Grid */}
-            <div
-              className="grid gap-3 p-5 bg-slate-100 rounded-2xl overflow-x-auto"
-              style={{
-                gridTemplateColumns: `repeat(${expo.boothColumns || 6}, minmax(105px, 1fr))`,
-              }}
-            >
-              {booths.map((b) => {
-                const color =
-                  b.status === 'occupied'
-                    ? 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-900'
-                    : b.status === 'reserved'
-                    ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'
-                    : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-900'
+            <div className="w-full overflow-x-auto pb-2">
+              <div
+                className="grid gap-3 p-4 sm:p-5 bg-slate-100 rounded-2xl min-w-[680px]"
+                style={{
+                  gridTemplateColumns: `repeat(${expo.boothColumns || 6}, minmax(105px, 1fr))`,
+                }}
+              >
+                {booths.map((b) => {
+                  const color =
+                    b.status === 'occupied'
+                      ? 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-900'
+                      : b.status === 'reserved'
+                      ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'
+                      : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-900'
 
-                return (
-                  <button
-                    key={b._id}
-                    type="button"
-                    onClick={() => setInspectedBooth(b)}
-                    className={`h-24 border-2 rounded-xl flex flex-col justify-between p-2.5 text-left transition-all hover:scale-[1.03] shadow-2xs cursor-pointer ${color}`}
-                  >
-                    <div className="flex items-center justify-between w-full text-[11px] font-extrabold">
-                      <span>{b.number}</span>
-                      <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-white/70">
-                        {b.size}
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold truncate w-full">
-                      {b.exhibitorProfile?.company || (
-                        <span className="uppercase text-[10px] tracking-wider opacity-80">
-                          {b.status}
+                  return (
+                    <button
+                      key={b._id}
+                      type="button"
+                      onClick={() => setInspectedBooth(b)}
+                      className={`h-24 border-2 rounded-xl flex flex-col justify-between p-2.5 text-left transition-all hover:scale-[1.03] shadow-2xs cursor-pointer ${color}`}
+                    >
+                      <div className="flex items-center justify-between w-full text-[11px] font-extrabold">
+                        <span>{b.number}</span>
+                        <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-white/70">
+                          {b.size}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-[10px] font-semibold opacity-75">
-                      ${b.price || 500} USD
-                    </div>
-                  </button>
-                )
-              })}
+                      </div>
+                      <div className="text-xs font-bold truncate w-full">
+                        {b.exhibitorProfile?.company || (
+                          <span className="uppercase text-[10px] tracking-wider opacity-80">
+                            {b.status}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] font-semibold opacity-75">
+                        ${b.price || 500} USD
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}

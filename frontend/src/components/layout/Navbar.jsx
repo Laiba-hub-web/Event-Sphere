@@ -10,10 +10,6 @@ import {
   MessageSquare,
   LayoutDashboard,
   Sparkles,
-  Calendar,
-  Store,
-  Clock,
-  BarChart3,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -44,8 +40,8 @@ export default function Navbar() {
     ...(isExhibitor
       ? [
           { label: 'Exhibitor Hub', to: '/exhibitor/dashboard' },
-          { label: 'My Applications', to: '/exhibitor/applications' },
-          { label: 'Company Showcase', to: '/exhibitor/profile' },
+          { label: 'Applications', to: '/exhibitor/applications' },
+          { label: 'Showcase Profile', to: '/exhibitor/profile' },
         ]
       : []),
     ...(isAttendee
@@ -64,11 +60,11 @@ export default function Navbar() {
     : 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
 
   return (
-    <nav className="bg-white/90 backdrop-blur-lg border-b border-slate-200/80 sticky top-0 z-40 shadow-xs no-print">
+    <nav className="bg-white/95 backdrop-blur-lg border-b border-slate-200/80 sticky top-0 z-40 shadow-xs no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-3">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform">
               <Globe2 size={20} className="text-white" />
             </div>
@@ -82,13 +78,13 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-1.5">
+          {/* Desktop nav links (lg and up so tablet never wraps/overflows) */}
+          <div className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={`px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold whitespace-nowrap transition-all ${
                   isActive(link.to)
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -99,8 +95,8 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right side */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right side (Desktop lg+) */}
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             {isAuthenticated ? (
               <>
                 <Link
@@ -219,20 +215,52 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
-            onClick={() => setMobileOpen((v) => !v)}
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          {/* Mobile & Tablet right actions (< lg) */}
+          <div className="flex lg:hidden items-center gap-1.5">
+            {isAuthenticated && (
+              <Link
+                to="/messages"
+                className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+                title="Messages"
+              >
+                <MessageSquare size={20} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+              </Link>
+            )}
+            <button
+              className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Toggle Menu"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile & Tablet menu (< lg) */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pb-4">
-          <div className="flex flex-col gap-1 mt-3">
+        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pb-5 shadow-lg">
+          {isAuthenticated && (
+            <div className="flex items-center justify-between py-3 mb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 truncate">{user?.name}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
+                </div>
+              </div>
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${roleBadgeColor}`}
+              >
+                {user?.role}
+              </span>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1 mt-2">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
@@ -254,7 +282,7 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
-                  Messages
+                  Direct Messages
                 </Link>
                 <Link
                   to="/profile"
@@ -271,7 +299,7 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-2 pt-3">
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}
@@ -284,7 +312,7 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="px-3 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white text-center"
                 >
-                  Get Started
+                  Get Free Pass
                 </Link>
               </div>
             )}
