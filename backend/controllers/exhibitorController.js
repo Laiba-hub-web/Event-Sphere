@@ -79,19 +79,38 @@ const applyToExpo = async (req, res, next) => {
 // ─── @access  Private / Admin
 const getApplications = async (req, res, next) => {
   try {
+    const Booth = require('../models/Booth');
     const { status } = req.query;
     const filter = { expo: req.params.expoId };
     if (status) filter.applicationStatus = status;
 
-    const applications = await ExhibitorProfile.find(filter)
-      .populate('user', 'name email avatar')
-      .populate('expo', 'title date')
-      .sort({ createdAt: -1 });
+    const [applications, booths] = await Promise.all([
+      ExhibitorProfile.find(filter)
+        .populate('user', 'name email avatar')
+        .populate('expo', 'title date')
+        .sort({ createdAt: 1 })
+        .lean(),
+      Booth.find({ expo: req.params.expoId, status: { $ne: 'available' } })
+        .select('number size status price exhibitor exhibitorProfile')
+        .lean(),
+    ]);
+
+    const enriched = applications.map((app) => {
+      const matchedBooth = booths.find(
+        (b) =>
+          (b.exhibitorProfile && b.exhibitorProfile.toString() === app._id.toString()) ||
+          (b.exhibitor && app.user?._id && b.exhibitor.toString() === app.user._id.toString())
+      );
+      return {
+        ...app,
+        booth: matchedBooth || null,
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: applications.length,
-      applications,
+      count: enriched.length,
+      applications: enriched,
     });
   } catch (err) {
     next(err);
@@ -102,14 +121,58 @@ const getApplications = async (req, res, next) => {
 // ─── @access  Private / Exhibitor
 const getMyApplications = async (req, res, next) => {
   try {
-    const applications = await ExhibitorProfile.find({ user: req.user._id })
-      .populate('expo', 'title date location status')
-      .sort({ createdAt: -1 });
+    const Booth = require('../models/Booth');
+    const [applications, userBooths] = await Promise.all([
+      ExhibitorProfile.find({ user: req.user._id })
+        .populate('expo', 'title date location status')
+        .sort({ createdAt: 1 })
+        .lean(),
+      Booth.find({ exhibitor: req.user._id })
+        .populate('expo', 'title date location status')
+        .select('number size status price expo exhibitorProfile')
+        .lean(),
+    ]);
+
+    const enriched = applications.map((app) => {
+      const appExpoId = app.expo?._id?.toString() || app.expo?.toString();
+      const matchedBooth = userBooths.find((b) => {
+        const bExpoId = b.expo?._id?.toString() || b.expo?.toString();
+        return (
+          (b.exhibitorProfile && b.exhibitorProfile.toString() === app._id.toString()) ||
+          (bExpoId && appExpoId && bExpoId === appExpoId)
+        );
+      });
+      return {
+        ...app,
+        booth: matchedBooth || null,
+      };
+    });
+
+    // If user was assigned a booth in an expo where they didn't have an application record yet, include it
+    const seenExpoIds = new Set(
+      enriched.map((a) => a.expo?._id?.toString()).filter(Boolean)
+    );
+    for (const b of userBooths) {
+      const bExpoId = b.expo?._id?.toString();
+      if (bExpoId && !seenExpoIds.has(bExpoId)) {
+        seenExpoIds.add(bExpoId);
+        enriched.push({
+          _id: b._id,
+          user: req.user._id,
+          expo: b.expo,
+          company: `${req.user.name} Company`,
+          products: ['Enterprise Solutions'],
+          services: ['Partner Services'],
+          applicationStatus: 'approved',
+          booth: b,
+        });
+      }
+    }
 
     res.status(200).json({
       success: true,
-      count: applications.length,
-      applications,
+      count: enriched.length,
+      applications: enriched,
     });
   } catch (err) {
     next(err);

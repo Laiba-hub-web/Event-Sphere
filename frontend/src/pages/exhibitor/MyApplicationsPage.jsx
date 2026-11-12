@@ -107,6 +107,11 @@ export default function MyApplicationsPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
+                    {app.booth && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold">
+                        <Grid size={13} /> Booth {app.booth.number}
+                      </span>
+                    )}
                     <Badge
                       variant={
                         app.applicationStatus === 'approved'
@@ -125,7 +130,7 @@ export default function MyApplicationsPage() {
                         to={`/exhibitor/booth/${app.expo._id}`}
                         className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
                       >
-                        <Grid size={14} /> Select / Manage 2D Booth
+                        <Grid size={14} /> {app.booth ? 'View / Change Booth' : 'Select Booth'}
                       </Link>
                     )}
                   </div>

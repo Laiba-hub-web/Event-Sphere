@@ -22,17 +22,17 @@ const buildBooths = (expoId, rows, columns) => {
 };
 
 // ─── @route   GET /api/expos ──────────────────────────────────────────────────
-// ─── @access  Public (admin sees all, everyone else sees published only)
+// ─── @access  Public (admin sees all, everyone else sees published/ongoing)
 const getExpos = async (req, res, next) => {
   try {
     const filter =
       req.user && req.user.role === 'admin'
         ? {}
-        : { status: 'published' };
+        : { status: { $in: ['published', 'ongoing'] } };
 
     const expos = await Expo.find(filter)
       .populate('organizer', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: 1 });
 
     res.status(200).json({ success: true, count: expos.length, expos });
   } catch (err) {
@@ -194,7 +194,7 @@ const deleteExpo = async (req, res, next) => {
 const getMyExpos = async (req, res, next) => {
   try {
     const expos = await Expo.find({ organizer: req.user._id }).sort({
-      createdAt: -1,
+      createdAt: 1,
     });
 
     res.status(200).json({ success: true, count: expos.length, expos });

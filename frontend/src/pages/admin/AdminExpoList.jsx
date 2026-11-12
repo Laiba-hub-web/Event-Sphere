@@ -82,7 +82,7 @@ export default function AdminExpoList() {
               Manage Trade Shows &amp; Exhibitions
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">
-              Configure 2D floor plans, keynote schedules, exhibitor approvals, and live telemetry.
+              Manage floor plans, speaker schedules, exhibitor approvals, and event reports.
             </p>
           </div>
           <Link
@@ -246,10 +246,10 @@ export default function AdminExpoList() {
                             </Link>
                             <Link
                               to={`/admin/analytics/${expo._id}`}
-                              title="Live Analytics"
+                              title="Event Reports"
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
                             >
-                              <BarChart3 size={13} /> Telemetry
+                              <BarChart3 size={13} /> Reports
                             </Link>
                             <Link
                               to={`/admin/expos/${expo._id}/edit`}

@@ -23,6 +23,7 @@ import { useAuth } from '../../hooks/useAuth'
 export default function AdminDashboard() {
   const { user } = useAuth()
   const [expos, setExpos] = useState([])
+  const [selectedExpoId, setSelectedExpoId] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,7 +34,13 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
       const res = await expoService.getAll()
-      setExpos(res.data.expos || [])
+      const list = res.data.expos || []
+      setExpos(list)
+      if (list.length > 0) {
+        const flagship =
+          list.find((e) => e.title?.includes('Global Tech & AI Summit')) || list[0]
+        setSelectedExpoId(flagship._id)
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -41,13 +48,16 @@ export default function AdminDashboard() {
     }
   }
 
-  const publishedCount = expos.filter((e) => e.status === 'published').length
+  const publishedCount = expos.filter(
+    (e) => e.status === 'published' || e.status === 'ongoing'
+  ).length
   const upcomingCount = expos.filter((e) => new Date(e.date) >= new Date()).length
   const totalBoothCapacity = expos.reduce(
     (acc, e) => acc + (e.boothRows || 5) * (e.boothColumns || 8),
     0
   )
-  const firstExpoId = expos[0]?._id
+  const firstExpoId = selectedExpoId || expos[0]?._id
+  const activeExpo = expos.find((e) => e._id === firstExpoId) || expos[0]
 
   return (
     <DashboardLayout>
@@ -115,76 +125,96 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Quick Shortcuts for Latest Event */}
+        {/* Quick Shortcuts for Selected Event */}
         {firstExpoId && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link
-              to={`/admin/expos/${firstExpoId}/floor-plan`}
-              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
-            >
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                <Grid size={19} />
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs">
+              <div className="text-xs font-semibold text-slate-600">
+                Quick Actions for Event:{' '}
+                <span className="font-bold text-blue-600">{activeExpo?.title}</span>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">
-                  Floor Plan &amp; Booths
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Manage booth pricing and assign companies
-                </p>
-              </div>
-            </Link>
+              <select
+                value={firstExpoId}
+                onChange={(e) => setSelectedExpoId(e.target.value)}
+                className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {expos.map((ex) => (
+                  <option key={ex._id} value={ex._id}>
+                    {ex.title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <Link
-              to={`/admin/expos/${firstExpoId}/exhibitors`}
-              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
-            >
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                <Store size={19} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600">
-                  Exhibitor Requests
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Approve or decline company applications
-                </p>
-              </div>
-            </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link
+                to={`/admin/expos/${firstExpoId}/floor-plan`}
+                className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <Grid size={19} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">
+                    Floor Plan &amp; Booths
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    {activeExpo?.title}
+                  </p>
+                </div>
+              </Link>
 
-            <Link
-              to={`/admin/expos/${firstExpoId}/schedule`}
-              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
-            >
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                <Mic2 size={19} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-600">
-                  Event Schedule
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Add speakers, sessions, and room timings
-                </p>
-              </div>
-            </Link>
+              <Link
+                to={`/admin/expos/${firstExpoId}/exhibitors`}
+                className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  <Store size={19} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600">
+                    Exhibitor Requests
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    {activeExpo?.title}
+                  </p>
+                </div>
+              </Link>
 
-            <Link
-              to={`/admin/analytics/${firstExpoId}`}
-              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
-            >
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                <BarChart3 size={19} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600">
-                  Reports &amp; Insights
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  View registrations, booth bookings, and ratings
-                </p>
-              </div>
-            </Link>
+              <Link
+                to={`/admin/expos/${firstExpoId}/schedule`}
+                className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                  <Mic2 size={19} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-600">
+                    Event Schedule
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    {activeExpo?.title}
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                to={`/admin/analytics/${firstExpoId}`}
+                className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <BarChart3 size={19} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600">
+                    Reports &amp; Insights
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    {activeExpo?.title}
+                  </p>
+                </div>
+              </Link>
+            </div>
           </div>
         )}
 
