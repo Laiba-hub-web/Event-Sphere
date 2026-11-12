@@ -1,6 +1,18 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// Fast in-memory user cache (60s TTL) to avoid redundant MongoDB Atlas round-trips on every request
+const userCache = new Map();
+const USER_CACHE_TTL = 60 * 1000;
+
+const clearUserCache = (userId) => {
+  if (userId) {
+    userCache.delete(userId.toString());
+  } else {
+    userCache.clear();
+  }
+};
+
 /**
  * protect middleware
  * Verifies the JWT from the Authorization Bearer header and attaches
@@ -25,15 +37,21 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const uid = decoded.id.toString();
 
-    // Fetch user and exclude password
-    req.user = await User.findById(decoded.id).select('-password');
-
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized, user no longer exists',
-      });
+    const cached = userCache.get(uid);
+    if (cached && cached.expiresAt > Date.now()) {
+      req.user = cached.user;
+    } else {
+      const userDoc = await User.findById(uid).select('-password').lean();
+      if (!userDoc) {
+        return res.status(401).json({
+          success: false,
+          message: 'Not authorized, user no longer exists',
+        });
+      }
+      userCache.set(uid, { user: userDoc, expiresAt: Date.now() + USER_CACHE_TTL });
+      req.user = userDoc;
     }
 
     if (!req.user.isActive) {
@@ -54,10 +72,6 @@ const protect = async (req, res, next) => {
 
 /**
  * authorize(...roles) middleware factory
- * Restricts access to users whose role matches one of the provided roles.
- * Must be used AFTER the protect middleware.
- *
- * @param {...string} roles - Allowed roles (e.g., 'admin', 'exhibitor')
  */
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -71,4 +85,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+module.exports = { protect, authorize, clearUserCache };

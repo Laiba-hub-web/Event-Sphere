@@ -79,9 +79,9 @@ export default function ExhibitorProfilePage() {
 
   const previewProducts = watchedProducts
     ? watchedProducts
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean)
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
     : []
 
   return (

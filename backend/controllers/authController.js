@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
+const { clearUserCache } = require('../middleware/auth');
 
 // ─── Helper: Send token response ─────────────────────────────────────────────
 const sendTokenResponse = (user, statusCode, res) => {
@@ -30,7 +31,6 @@ const sendTokenResponse = (user, statusCode, res) => {
 // ─── @access  Public
 const register = async (req, res, next) => {
   try {
-    // Handle express-validator errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ success: false, errors: errors.array() });
@@ -38,15 +38,13 @@ const register = async (req, res, next) => {
 
     const { name, email, password, role } = req.body;
 
-    // Check for duplicate email
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const existing = await User.findOne({ email: email.toLowerCase() }).lean();
     if (existing) {
       return res
         .status(400)
         .json({ success: false, message: 'Email already registered' });
     }
 
-    // Only allow valid roles; default to 'attendee' if not specified or invalid
     const allowedRoles = ['admin', 'exhibitor', 'attendee'];
     const userRole = allowedRoles.includes(role) ? role : 'attendee';
 
@@ -69,7 +67,6 @@ const login = async (req, res, next) => {
 
     const { email, password } = req.body;
 
-    // Find user and explicitly select the password field (it's excluded by default)
     const user = await User.findOne({ email: email.toLowerCase() }).select(
       '+password'
     );
@@ -77,7 +74,7 @@ const login = async (req, res, next) => {
     if (!user) {
       return res
         .status(401)
-        .json({ success: false, message: 'Invalid credentials' });
+        .json({ success: false, message: 'Invalid email or password' });
     }
 
     if (!user.isActive) {
@@ -90,7 +87,7 @@ const login = async (req, res, next) => {
     if (!isMatch) {
       return res
         .status(401)
-        .json({ success: false, message: 'Invalid credentials' });
+        .json({ success: false, message: 'Invalid email or password' });
     }
 
     sendTokenResponse(user, 200, res);
@@ -121,14 +118,12 @@ const forgotPassword = async (req, res, next) => {
         .json({ success: false, message: 'Please provide an email address' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-    // Always return success to prevent email enumeration
     if (!user) {
-      return res.status(200).json({
-        success: true,
-        message:
-          'If that email exists in our system, a reset link has been sent.',
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email address.',
       });
     }
 
@@ -140,32 +135,37 @@ const forgotPassword = async (req, res, next) => {
       .digest('hex');
 
     user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
     await user.save({ validateBeforeSave: false });
 
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${clientUrl}/reset-password/${rawToken}`;
 
     const html = `
-      <h2>EventSphere — Password Reset</h2>
-      <p>You requested a password reset. Click the link below to set a new password:</p>
-      <a href="${resetUrl}" style="display:inline-block;padding:10px 20px;background:#6366f1;color:#fff;text-decoration:none;border-radius:5px;">Reset Password</a>
-      <p>This link expires in <strong>10 minutes</strong>.</p>
-      <p>If you did not request this, please ignore this email.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <h2 style="color: #0f172a; margin-top: 0;">Reset Your EventSphere Password</h2>
+        <p style="color: #475569; line-height: 1.6;">Hi ${user.name},</p>
+        <p style="color: #475569; line-height: 1.6;">We received a request to reset the password for your EventSphere account. Click the button below to choose a new password:</p>
+        <div style="margin: 24px 0;">
+          <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold;">Reset Password</a>
+        </div>
+        <p style="color: #64748b; font-size: 13px;">Or copy and paste this link in your browser:<br/><a href="${resetUrl}" style="color: #2563eb;">${resetUrl}</a></p>
+        <p style="color: #64748b; font-size: 12px; margin-top: 24px;">This link is valid for 30 minutes.</p>
+      </div>
     `;
 
-    try {
-      await sendEmail({ to: user.email, subject: 'EventSphere Password Reset', html });
-    } catch (emailErr) {
-      // Roll back token if email fails
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpire = undefined;
-      await user.save({ validateBeforeSave: false });
-      return next(new Error('Email could not be sent. Please try again later.'));
-    }
+    const emailInfo = await sendEmail({
+      to: user.email,
+      subject: 'EventSphere — Password Reset Request',
+      html,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'If that email exists in our system, a reset link has been sent.',
+      message: 'Password reset instructions sent!',
+      resetToken: rawToken,
+      resetUrl,
+      previewUrl: emailInfo?.previewUrl || null,
     });
   } catch (err) {
     next(err);
@@ -185,7 +185,6 @@ const resetPassword = async (req, res, next) => {
       });
     }
 
-    // Hash the token from the URL to compare against stored hashed token
     const hashedToken = crypto
       .createHash('sha256')
       .update(req.params.token)
@@ -193,21 +192,21 @@ const resetPassword = async (req, res, next) => {
 
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
-      resetPasswordExpire: { $gt: Date.now() }, // Token must not be expired
+      resetPasswordExpire: { $gt: Date.now() },
     });
 
     if (!user) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid or expired reset token' });
+        .json({ success: false, message: 'Invalid or expired reset link. Please request a new one.' });
     }
 
-    // Set new password and clear reset fields
     user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 
+    clearUserCache(user._id);
     sendTokenResponse(user, 200, res);
   } catch (err) {
     next(err);
@@ -220,13 +219,11 @@ const updateProfile = async (req, res, next) => {
   try {
     const { name, email, avatar } = req.body;
 
-    // Build the update object with only provided fields
     const fieldsToUpdate = {};
     if (name) fieldsToUpdate.name = name;
     if (email) fieldsToUpdate.email = email.toLowerCase();
     if (avatar !== undefined) fieldsToUpdate.avatar = avatar;
 
-    // If a file was uploaded, use its path instead
     if (req.file) {
       fieldsToUpdate.avatar = `/uploads/${req.file.filename}`;
     }
@@ -237,6 +234,7 @@ const updateProfile = async (req, res, next) => {
       { new: true, runValidators: true }
     );
 
+    clearUserCache(req.user._id);
     res.status(200).json({ success: true, user });
   } catch (err) {
     next(err);
@@ -255,7 +253,7 @@ const changePassword = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
       return res.status(400).json({
@@ -267,6 +265,7 @@ const changePassword = async (req, res, next) => {
     user.password = newPassword;
     await user.save();
 
+    clearUserCache(req.user._id);
     res.status(200).json({
       success: true,
       message: 'Password updated successfully',

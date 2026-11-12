@@ -4,25 +4,18 @@ import {
   Calendar,
   MapPin,
   Users,
-  Grid,
   Clock,
-  CheckCircle2,
   MessageSquare,
   Star,
-  Sparkles,
   QrCode,
   Search,
-  Building2,
   Send,
-  ShieldCheck,
-  Wifi,
-  Zap,
-  Coffee,
-  Mic,
   ArrowLeft,
   Printer,
-  Globe,
   Loader2,
+  Compass,
+  Mic2,
+  Coffee,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Navbar from '../components/layout/Navbar'
@@ -59,10 +52,7 @@ export default function ExpoDetailPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Exhibitor search
   const [exhSearch, setExhSearch] = useState('')
-
-  // Modals
   const [inspectedBooth, setInspectedBooth] = useState(null)
   const [passModalOpen, setPassModalOpen] = useState(false)
   const [messageModalTarget, setMessageModalTarget] = useState(null)
@@ -70,43 +60,41 @@ export default function ExpoDetailPage() {
   const [sendingMsg, setSendingMsg] = useState(false)
   const [reservingBooth, setReservingBooth] = useState(false)
 
-  // Feedback state
   const [rating, setRating] = useState(5)
   const [feedbackCategory, setFeedbackCategory] = useState('general')
   const [feedbackText, setFeedbackText] = useState('')
 
   useEffect(() => {
     loadAllData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthenticated])
 
   const loadAllData = async () => {
     try {
       setLoading(true)
-      const expoRes = await expoService.getOne(id)
-      setExpo(expoRes.data.expo)
-
-      const [sessRes, exhRes, bthRes, fbRes] = await Promise.all([
-        sessionService.getByExpo(id),
-        exhibitorService.getByExpo(id),
-        boothService.getByExpo(id),
+      const [expoRes, sessRes, exhRes, bthRes, fbRes, regRes] = await Promise.all([
+        expoService.getOne(id),
+        sessionService.getByExpo(id).catch(() => ({ data: { sessions: [] } })),
+        exhibitorService.getByExpo(id).catch(() => ({ data: { exhibitors: [] } })),
+        boothService.getByExpo(id).catch(() => ({ data: { booths: [] } })),
         feedbackService.getByExpo(id).catch(() => ({ data: { feedback: [] } })),
+        isAuthenticated
+          ? registrationService
+              .checkRegistration(id)
+              .catch(() => ({ data: { isRegistered: false, registration: null } }))
+          : Promise.resolve({ data: { isRegistered: false, registration: null } }),
       ])
 
+      setExpo(expoRes.data.expo)
       setSessions(sessRes.data.sessions || [])
       setExhibitors(exhRes.data.exhibitors || [])
       setBooths(bthRes.data.booths || [])
       setFeedbacks(fbRes.data?.feedback || [])
-
-      if (isAuthenticated) {
-        const regRes = await registrationService
-          .checkRegistration(id)
-          .catch(() => ({ data: { isRegistered: false, registration: null } }))
-        setIsRegistered(regRes.data.isRegistered)
-        setRegistration(regRes.data.registration || null)
-      }
+      setIsRegistered(regRes.data.isRegistered)
+      setRegistration(regRes.data.registration || null)
     } catch (err) {
       console.error(err)
-      toast.error('Failed to load expo details')
+      toast.error('Failed to load event details')
     } finally {
       setLoading(false)
     }
@@ -114,7 +102,7 @@ export default function ExpoDetailPage() {
 
   const handleRegisterExpo = async () => {
     if (!isAuthenticated) {
-      toast.error('Please sign in to register for an event pass')
+      toast.error('Please sign in to register for this event')
       navigate('/login')
       return
     }
@@ -128,7 +116,7 @@ export default function ExpoDetailPage() {
         const res = await registrationService.register(id)
         setIsRegistered(true)
         setRegistration(res.data.registration)
-        toast.success('VIP Event Pass issued! Opening your QR badge...')
+        toast.success('Registered! Your ticket is ready.')
         setPassModalOpen(true)
       }
     } catch (err) {
@@ -188,7 +176,7 @@ export default function ExpoDetailPage() {
         category: feedbackCategory,
         message: feedbackText,
       })
-      toast.success('Thank you! Your review has been published.')
+      toast.success('Thank you! Your review has been posted.')
       setFeedbackText('')
       const fbRes = await feedbackService.getByExpo(id).catch(() => ({ data: { feedback: [] } }))
       setFeedbacks(fbRes.data?.feedback || [])
@@ -201,8 +189,8 @@ export default function ExpoDetailPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center py-24">
-          <LoadingSpinner text="Loading exhibition hall, schedule & booth grid..." />
+        <div className="flex-1 flex items-center justify-center py-20">
+          <LoadingSpinner text="Loading event details..." />
         </div>
       </div>
     )
@@ -214,9 +202,9 @@ export default function ExpoDetailPage() {
         <Navbar />
         <div className="flex-1 max-w-4xl mx-auto py-20 px-4">
           <EmptyState
-            title="Expo not found"
-            description="The requested expo could not be found or has been removed."
-            actionLabel="Browse All Expos"
+            title="Event not found"
+            description="The requested event could not be found."
+            actionLabel="Browse Events"
             actionTo="/expos"
           />
         </div>
@@ -233,7 +221,6 @@ export default function ExpoDetailPage() {
       ? (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1)
       : '5.0'
 
-  // Map exhibitor ID to booth number
   const exhibitorBoothMap = {}
   booths.forEach((b) => {
     if (b.exhibitorProfile?._id) {
@@ -252,53 +239,42 @@ export default function ExpoDetailPage() {
     )
   })
 
-  const bannerUrl =
-    expo.bannerImage ||
-    'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&auto=format&fit=crop&q=80'
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      {/* CINEMATIC HERO BANNER */}
-      <div className="relative bg-slate-950 text-white overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={bannerUrl}
-            alt={expo.title}
-            className="w-full h-full object-cover opacity-30 scale-105 blur-[1px]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/60" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-14 relative z-10 space-y-8">
+      {/* CLEAN LIGHT EVENT HEADER */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           <Link
             to="/expos"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
           >
-            <ArrowLeft size={14} /> Back to All Expos
+            <ArrowLeft size={14} /> Back to Events
           </Link>
 
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-            <div className="space-y-4 max-w-3xl">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-600/30 text-blue-300 border border-blue-400/30">
-                  <Sparkles size={12} /> {expo.theme || 'International Trade Show'}
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div className="space-y-3 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
+                  {expo.theme || 'Conference & Exhibition'}
                 </span>
-                <Badge variant={expo.status || 'published'}>{expo.status || 'published'}</Badge>
-                <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
+                <Badge variant={expo.status === 'published' ? 'success' : 'neutral'}>
+                  {expo.status || 'published'}
+                </Badge>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
                   <Star size={12} fill="currentColor" /> {avgRating} ({feedbacks.length} reviews)
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight">
                 {expo.title}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs sm:text-sm text-slate-300 pt-1">
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs sm:text-sm text-slate-600">
                 <span className="flex items-center gap-2">
-                  <Calendar size={16} className="text-blue-400" />
-                  <strong>
+                  <Calendar size={16} className="text-blue-600" />
+                  <span>
                     {new Date(expo.date).toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
@@ -310,10 +286,10 @@ export default function ExpoDetailPage() {
                         day: 'numeric',
                         year: 'numeric',
                       })}`}
-                  </strong>
+                  </span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <MapPin size={16} className="text-rose-400" />
+                  <MapPin size={16} className="text-blue-600" />
                   <span>{expo.location}</span>
                 </span>
               </div>
@@ -325,15 +301,15 @@ export default function ExpoDetailPage() {
                 <>
                   <Link
                     to={`/admin/expos/${expo._id}/floor-plan`}
-                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs transition-colors"
                   >
-                    Configure Floor Plan
+                    Manage Booths
                   </Link>
                   <Link
                     to={`/admin/analytics/${expo._id}`}
-                    className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors"
                   >
-                    Live Analytics
+                    View Reports
                   </Link>
                 </>
               )}
@@ -342,15 +318,15 @@ export default function ExpoDetailPage() {
                 <>
                   <Link
                     to={`/exhibitor/apply/${expo._id}`}
-                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors"
                   >
                     Apply as Exhibitor
                   </Link>
                   <Link
                     to={`/exhibitor/booth/${expo._id}`}
-                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs transition-colors"
                   >
-                    Select Booth Space
+                    Select Booth
                   </Link>
                 </>
               )}
@@ -361,23 +337,23 @@ export default function ExpoDetailPage() {
                     <>
                       <button
                         onClick={() => setPassModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-all"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors cursor-pointer"
                       >
-                        <QrCode size={16} /> View My VIP QR Pass
+                        <QrCode size={16} /> View Ticket
                       </button>
                       <button
                         onClick={handleRegisterExpo}
-                        className="px-4 py-3 rounded-xl bg-white/10 hover:bg-rose-600/80 text-slate-200 hover:text-white font-semibold text-xs border border-white/15 transition-all"
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-semibold text-xs transition-colors cursor-pointer"
                       >
-                        Cancel Pass
+                        Cancel Registration
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={handleRegisterExpo}
-                      className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-blue-600/30 transition-all"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-xs transition-colors cursor-pointer"
                     >
-                      <QrCode size={18} /> Get Free Attendee VIP Pass
+                      <QrCode size={17} /> Register for Free Ticket
                     </button>
                   )}
                 </div>
@@ -386,47 +362,47 @@ export default function ExpoDetailPage() {
           </div>
 
           {/* Quick Stats Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/10">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="text-2xl font-extrabold text-white">{booths.length}</div>
-              <div className="text-xs text-slate-400 font-medium">
-                Exhibition Booths ({availableCount} Available)
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-100">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5">
+              <div className="text-xl font-bold text-slate-900">{booths.length}</div>
+              <div className="text-xs text-slate-500">
+                Booths ({availableCount} Open)
               </div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="text-2xl font-extrabold text-blue-400">{exhibitors.length}</div>
-              <div className="text-xs text-slate-400 font-medium">Verified Exhibiting Brands</div>
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5">
+              <div className="text-xl font-bold text-blue-600">{exhibitors.length}</div>
+              <div className="text-xs text-slate-500">Exhibiting Companies</div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="text-2xl font-extrabold text-violet-400">{sessions.length}</div>
-              <div className="text-xs text-slate-400 font-medium">Keynotes & Technical Labs</div>
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5">
+              <div className="text-xl font-bold text-slate-900">{sessions.length}</div>
+              <div className="text-xs text-slate-500">Speaker Sessions</div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="text-2xl font-extrabold text-emerald-400">Free Entry</div>
-              <div className="text-xs text-slate-400 font-medium">Instant Digital QR Badge</div>
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5">
+              <div className="text-xl font-bold text-emerald-600">Free Entry</div>
+              <div className="text-xs text-slate-500">Instant Event Ticket</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* STICKY TABS BAR */}
-      <div className="bg-white border-b border-slate-200 sticky top-16 z-30 shadow-2xs">
+      {/* TABS BAR */}
+      <div className="bg-white border-b border-slate-200 sticky top-16 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-2 sm:space-x-6 overflow-x-auto no-scrollbar">
             {[
-              { id: 'overview', label: 'Overview & Venue' },
-              { id: 'schedule', label: `Keynote Schedule (${sessions.length})` },
-              { id: 'exhibitors', label: `Exhibitors Directory (${exhibitors.length})` },
-              { id: 'floorplan', label: `2D Floor Plan (${booths.length} Booths)` },
-              { id: 'feedback', label: `Reviews & Ratings (${feedbacks.length})` },
+              { id: 'overview', label: 'About Event' },
+              { id: 'schedule', label: `Schedule (${sessions.length})` },
+              { id: 'exhibitors', label: `Exhibitors (${exhibitors.length})` },
+              { id: 'floorplan', label: `Floor Plan (${booths.length})` },
+              { id: 'feedback', label: `Reviews (${feedbacks.length})` },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-2 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                className={`py-3.5 px-2 border-b-2 font-semibold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                 }`}
               >
                 {tab.label}
@@ -437,27 +413,27 @@ export default function ExpoDetailPage() {
       </div>
 
       {/* TAB CONTENT AREA */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-8">
-              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
-                <h2 className="text-2xl font-extrabold text-slate-900">Executive Event Overview</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <h2 className="text-xl font-bold text-slate-900">About This Event</h2>
                 <p className="text-slate-600 text-sm sm:text-base whitespace-pre-line leading-relaxed">
                   {expo.description || 'No description provided.'}
                 </p>
 
                 {expo.tags && expo.tags.length > 0 && (
                   <div className="pt-4 border-t border-slate-100">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                      Technology & Industry Tracks
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
+                      Topics
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {expo.tags.map((tag, i) => (
                         <span
                           key={i}
-                          className="px-3.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl text-xs font-bold"
+                          className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold"
                         >
                           #{tag}
                         </span>
@@ -466,84 +442,28 @@ export default function ExpoDetailPage() {
                   </div>
                 )}
               </div>
-
-              {/* Venue Amenities Grid */}
-              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/90 shadow-xs space-y-5">
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  Exhibition Hall Facilities & Infrastructure
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    {
-                      icon: Wifi,
-                      title: '10Gbps Dedicated Wi-Fi 6E',
-                      desc: 'Symmetric high-density wireless mesh across all exhibition booths.',
-                    },
-                    {
-                      icon: Zap,
-                      title: '3-Phase Industrial Power Drops',
-                      desc: 'Available at all Large & Island booths for live hardware rigs.',
-                    },
-                    {
-                      icon: Mic,
-                      title: 'Dolby Atmos Keynote Auditoriums',
-                      desc: 'Multi-track stages with real-time AI captioning and Q&A.',
-                    },
-                    {
-                      icon: Coffee,
-                      title: 'Executive B2B Networking Lounge',
-                      desc: 'Private meeting pods for exhibitor-attendee deal making.',
-                    },
-                  ].map((item, idx) => {
-                    const Icon = item.icon
-                    return (
-                      <div
-                        key={idx}
-                        className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-3.5"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-                          <Icon size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                            {item.desc}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
             </div>
 
             {/* Right Sidebar */}
             <div className="lg:col-span-4 space-y-6">
-              {/* Venue & Logistics Card */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
-                <h3 className="text-lg font-extrabold text-slate-900">Event Logistics</h3>
-                <div className="space-y-3 text-xs">
-                  <div className="flex justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Opening Date</span>
-                    <span className="font-bold text-slate-900">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <h3 className="text-base font-bold text-slate-900">Event Details</h3>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500">Date</span>
+                    <span className="font-semibold text-slate-900">
                       {new Date(expo.date).toLocaleDateString()}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Venue Location</span>
-                    <span className="font-bold text-slate-900 text-right max-w-[180px]">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500">Location</span>
+                    <span className="font-semibold text-slate-900 text-right max-w-[180px]">
                       {expo.location}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Floor Plan Grid</span>
-                    <span className="font-bold text-slate-900">
-                      {expo.boothRows || 4} Rows × {expo.boothColumns || 6} Columns
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2.5">
-                    <span className="text-slate-500 font-medium">Booth Availability</span>
-                    <span className="font-bold text-emerald-600">
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500">Available Booths</span>
+                    <span className="font-semibold text-emerald-600">
                       {availableCount} of {booths.length} Open
                     </span>
                   </div>
@@ -551,30 +471,29 @@ export default function ExpoDetailPage() {
 
                 <button
                   onClick={() => setActiveTab('floorplan')}
-                  className="w-full py-2.5 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition-colors"
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  Open Interactive 2D Floor Plan
+                  View Floor Plan
                 </button>
               </div>
 
               {/* Organizer Contact Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-blue-950 text-white p-6 rounded-2xl shadow-md space-y-4">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center font-extrabold text-base">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
                     {expo.organizer?.name ? expo.organizer.name[0] : 'O'}
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-blue-300">
-                      Official Event Organizer
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      Event Organizer
                     </p>
-                    <h4 className="font-bold text-sm text-white">
-                      {expo.organizer?.name || 'EventSphere Management'}
+                    <h4 className="font-bold text-sm text-slate-900">
+                      {expo.organizer?.name || 'EventSphere Organizer'}
                     </h4>
                   </div>
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Have questions about custom pavilion sponsorships, rigging, or group delegations?
-                  Message the organizing desk directly.
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Have questions about attending or exhibiting at this event? Send a message to the organizer.
                 </p>
                 {expo.organizer?._id && (
                   <button
@@ -588,9 +507,9 @@ export default function ExpoDetailPage() {
                         name: expo.organizer.name,
                       })
                     }}
-                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-white text-slate-950 hover:bg-blue-50 rounded-xl text-xs font-bold transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                   >
-                    <MessageSquare size={14} className="text-blue-600" /> Message Organizer Desk
+                    <MessageSquare size={14} className="text-blue-600" /> Contact Organizer
                   </button>
                 )}
               </div>
@@ -600,21 +519,21 @@ export default function ExpoDetailPage() {
 
         {/* TAB 2: SCHEDULE */}
         {activeTab === 'schedule' && (
-          <div className="space-y-6 max-w-4xl">
+          <div className="space-y-5 max-w-4xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200">
               <div>
-                <h2 className="text-xl font-extrabold text-slate-900">
-                  Keynote Presentations & Technical Workshops
+                <h2 className="text-lg font-bold text-slate-900">
+                  Speaker Sessions &amp; Schedule
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Click “Reserve Seat” on any session to add it to your personal itinerary.
+                  Save sessions to build your personal event schedule.
                 </p>
               </div>
               <Link
                 to="/attendee/schedule"
-                className="text-xs font-bold text-blue-600 hover:text-blue-800"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800"
               >
-                View My Bookmarked Itinerary →
+                View My Schedule &rarr;
               </Link>
             </div>
 
@@ -622,7 +541,7 @@ export default function ExpoDetailPage() {
               <EmptyState
                 icon={Clock}
                 title="No sessions scheduled yet"
-                description="The keynote agenda for this expo is currently being finalized."
+                description="The schedule for this event will be posted soon."
               />
             ) : (
               <div className="space-y-4">
@@ -646,11 +565,11 @@ export default function ExpoDetailPage() {
           <div className="space-y-6">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-extrabold text-slate-900">
-                  Approved Exhibitors & Product Showcase
+                <h2 className="text-lg font-bold text-slate-900">
+                  Exhibiting Companies
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Search companies by name, hardware product, or service vertical.
+                  Search companies by name, product, or service.
                 </p>
               </div>
               <div className="relative w-full sm:w-80">
@@ -659,8 +578,8 @@ export default function ExpoDetailPage() {
                   type="text"
                   value={exhSearch}
                   onChange={(e) => setExhSearch(e.target.value)}
-                  placeholder="Filter by company or product..."
-                  className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+                  placeholder="Search companies..."
+                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -669,7 +588,7 @@ export default function ExpoDetailPage() {
               <EmptyState
                 icon={Users}
                 title="No matching exhibitors"
-                description="Try clearing your search filter or check back soon."
+                description="Try clearing your search filter."
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -696,85 +615,82 @@ export default function ExpoDetailPage() {
           </div>
         )}
 
-        {/* TAB 4: INTERACTIVE 2D FLOOR PLAN */}
+        {/* TAB 4: CLEAN LIGHT-MODE FLOOR PLAN */}
         {activeTab === 'floorplan' && (
-          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  Interactive 2D Exhibition Floor Plan
+                <h3 className="text-lg font-bold text-slate-900">
+                  Exhibition Floor Plan
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Click any booth unit below to inspect dimensions, pricing, or exhibiting company.
+                  Click any booth below to view details or exhibiting company.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-4 text-xs font-bold">
+              <div className="flex flex-wrap gap-2.5 text-xs font-semibold">
                 <span className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Available (
-                  {availableCount})
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Available ({availableCount})
                 </span>
                 <span className="flex items-center gap-1.5 text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Reserved (
-                  {reservedCount})
+                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Reserved ({reservedCount})
                 </span>
-                <span className="flex items-center gap-1.5 text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Occupied (
-                  {occupiedCount})
+                <span className="flex items-center gap-1.5 text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-200">
+                  <span className="w-2 h-2 rounded-full bg-blue-600" /> Occupied ({occupiedCount})
                 </span>
               </div>
             </div>
 
             {/* Hall Landmarks Top */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-xs font-bold">
-              <div className="py-2.5 px-4 rounded-xl bg-slate-900 text-white">
-                🚪 Main Registration & Security Gate
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center text-xs font-semibold text-slate-600">
+              <div className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center gap-2">
+                <Compass size={15} className="text-blue-600" /> Main Entrance
               </div>
-              <div className="py-2.5 px-4 rounded-xl bg-indigo-950 text-indigo-200">
-                🎤 Grand Keynote Stage Alpha
+              <div className="py-2.5 px-4 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-800 flex items-center justify-center gap-2">
+                <Mic2 size={15} className="text-blue-600" /> Main Speaker Stage
               </div>
-              <div className="py-2.5 px-4 rounded-xl bg-slate-800 text-slate-200">
-                ☕ VIP Networking Lounge & Media Hub
+              <div className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center gap-2">
+                <Coffee size={15} className="text-amber-600" /> Networking Lounge
               </div>
             </div>
 
             {/* Booth Grid */}
             <div className="w-full overflow-x-auto pb-2">
               <div
-                className="grid gap-3 p-4 sm:p-5 bg-slate-100 rounded-2xl min-w-[680px]"
+                className="grid gap-3 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl min-w-[680px]"
                 style={{
-                  gridTemplateColumns: `repeat(${expo.boothColumns || 6}, minmax(105px, 1fr))`,
+                  gridTemplateColumns: `repeat(${expo.boothColumns || 6}, minmax(100px, 1fr))`,
                 }}
               >
                 {booths.map((b) => {
                   const color =
                     b.status === 'occupied'
-                      ? 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-900'
+                      ? 'bg-blue-50 hover:bg-blue-100/80 border-blue-200 text-blue-900'
                       : b.status === 'reserved'
-                      ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'
-                      : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-900'
+                      ? 'bg-amber-50 hover:bg-amber-100/80 border-amber-200 text-amber-900'
+                      : 'bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200 text-emerald-900'
 
                   return (
                     <button
                       key={b._id}
                       type="button"
                       onClick={() => setInspectedBooth(b)}
-                      className={`h-24 border-2 rounded-xl flex flex-col justify-between p-2.5 text-left transition-all hover:scale-[1.03] shadow-2xs cursor-pointer ${color}`}
+                      className={`h-24 border rounded-xl flex flex-col justify-between p-2.5 text-left transition-all shadow-2xs cursor-pointer ${color}`}
                     >
-                      <div className="flex items-center justify-between w-full text-[11px] font-extrabold">
+                      <div className="flex items-center justify-between w-full text-[11px] font-bold">
                         <span>{b.number}</span>
-                        <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-white/70">
+                        <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
                           {b.size}
                         </span>
                       </div>
-                      <div className="text-xs font-bold truncate w-full">
+                      <div className="text-xs font-bold truncate w-full text-slate-900">
                         {b.exhibitorProfile?.company || (
-                          <span className="uppercase text-[10px] tracking-wider opacity-80">
+                          <span className="capitalize text-[11px] font-medium opacity-75">
                             {b.status}
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] font-semibold opacity-75">
-                        ${b.price || 500} USD
+                      <div className="text-[10px] font-semibold text-slate-600">
+                        ${b.price || 500}
                       </div>
                     </button>
                   )
@@ -786,21 +702,20 @@ export default function ExpoDetailPage() {
 
         {/* TAB 5: FEEDBACK & REVIEWS */}
         {activeTab === 'feedback' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left: Submit Review */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-5">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-5 sticky top-36">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">Rate & Review This Expo</h3>
+                  <h3 className="text-base font-bold text-slate-900">Leave a Review</h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Share your experience with organizers and future attendees.
+                    Share your feedback about this event.
                   </p>
                 </div>
 
                 <form onSubmit={handleFeedbackSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Overall Star Rating
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Rating
                     </label>
                     <div className="flex gap-1.5">
                       {[1, 2, 3, 4, 5].map((s) => (
@@ -808,85 +723,84 @@ export default function ExpoDetailPage() {
                           type="button"
                           key={s}
                           onClick={() => setRating(s)}
-                          className={`p-2 rounded-xl border transition-all ${
+                          className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                             rating >= s
                               ? 'text-amber-400 bg-amber-50 border-amber-200'
                               : 'text-slate-300 bg-slate-50 border-slate-200'
                           }`}
                         >
-                          <Star size={22} fill={rating >= s ? 'currentColor' : 'none'} />
+                          <Star size={20} fill={rating >= s ? 'currentColor' : 'none'} />
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Feedback Category
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Category
                     </label>
                     <select
                       value={feedbackCategory}
                       onChange={(e) => setFeedbackCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-semibold bg-white"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
                     >
-                      <option value="general">General Event Experience</option>
-                      <option value="session">Keynotes & Speakers</option>
-                      <option value="booth">Exhibitor Booths & Floor Plan</option>
-                      <option value="logistics">Venue & Check-in Logistics</option>
+                      <option value="general">General Experience</option>
+                      <option value="session">Speakers &amp; Sessions</option>
+                      <option value="booth">Booths &amp; Exhibitors</option>
+                      <option value="logistics">Venue &amp; Organization</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Your Written Review
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Your Review
                     </label>
                     <textarea
                       rows={4}
                       required
                       value={feedbackText}
                       onChange={(e) => setFeedbackText(e.target.value)}
-                      placeholder="What stood out about the speakers, booths, or organization?"
-                      className="w-full p-3 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+                      placeholder="Write your thoughts about the event..."
+                      className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-colors"
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                   >
-                    Publish Verified Review
+                    Submit Review
                   </button>
                 </form>
               </div>
             </div>
 
-            {/* Right: Reviews List */}
             <div className="lg:col-span-7 space-y-4">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    Verified Attendee Reviews ({feedbacks.length})
+                  <h3 className="text-base font-bold text-slate-900">
+                    Attendee Reviews ({feedbacks.length})
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Average Score: <strong className="text-slate-900">{avgRating} / 5.0</strong>
+                    Average Rating: <strong className="text-slate-900">{avgRating} / 5.0</strong>
                   </p>
                 </div>
                 <div className="flex text-amber-400">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={18} fill="currentColor" />
+                    <Star key={i} size={17} fill="currentColor" />
                   ))}
                 </div>
               </div>
 
               {feedbacks.length === 0 ? (
                 <div className="bg-white p-10 rounded-2xl border border-slate-200 text-center text-xs text-slate-500">
-                  No reviews submitted yet. Be the first to rate this expo!
+                  No reviews yet. Be the first to review this event!
                 </div>
               ) : (
                 feedbacks.map((f) => (
                   <div
                     key={f._id}
-                    className="bg-white p-5 rounded-2xl border border-slate-200 space-y-2.5"
+                    className="bg-white p-5 rounded-2xl border border-slate-200 space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
@@ -895,10 +809,10 @@ export default function ExpoDetailPage() {
                         </div>
                         <div>
                           <span className="font-bold text-xs text-slate-900 block">
-                            {f.user?.name || 'Verified Attendee'}
+                            {f.user?.name || 'Attendee'}
                           </span>
                           <span className="text-[10px] text-slate-400 capitalize">
-                            {f.category || 'general'} ·{' '}
+                            {f.category || 'general'} &bull;{' '}
                             {new Date(f.createdAt).toLocaleDateString()}
                           </span>
                         </div>
@@ -922,42 +836,41 @@ export default function ExpoDetailPage() {
         )}
       </main>
 
-      {/* MODAL 1: BOOTH INSPECTOR */}
+      {/* MODAL 1: BOOTH DETAILS */}
       <Modal
         isOpen={!!inspectedBooth}
         onClose={() => setInspectedBooth(null)}
-        title={`Booth ${inspectedBooth?.number} — Floor Plan Inspector`}
+        title={`Booth ${inspectedBooth?.number}`}
       >
         {inspectedBooth && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
               <div>
                 <span className="text-slate-500">Status: </span>
-                <Badge variant={inspectedBooth.status}>{inspectedBooth.status}</Badge>
+                <span className="font-bold capitalize text-slate-900">{inspectedBooth.status}</span>
               </div>
               <div>
-                <span className="text-slate-500">Size Tier: </span>
+                <span className="text-slate-500">Size: </span>
                 <strong className="capitalize text-slate-900">{inspectedBooth.size}</strong>
               </div>
               <div>
                 <span className="text-slate-500">Price: </span>
-                <strong className="text-blue-600">${inspectedBooth.price || 500} USD</strong>
+                <strong className="text-blue-600">${inspectedBooth.price || 500}</strong>
               </div>
             </div>
 
             {inspectedBooth.notes && (
-              <div className="text-xs text-slate-600 bg-blue-50/60 border border-blue-100 p-3 rounded-xl">
-                <strong className="text-slate-900">Placement & Amenities:</strong>{' '}
-                {inspectedBooth.notes}
+              <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                <strong className="text-slate-900">Notes:</strong> {inspectedBooth.notes}
               </div>
             )}
 
             {inspectedBooth.exhibitorProfile ? (
               <div className="p-4 rounded-xl border border-slate-200 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">
-                  Assigned Exhibitor
+                  Exhibitor
                 </p>
-                <h4 className="text-base font-extrabold text-slate-900">
+                <h4 className="text-base font-bold text-slate-900">
                   {inspectedBooth.exhibitorProfile.company}
                 </h4>
                 {inspectedBooth.exhibitorProfile.description && (
@@ -976,27 +889,26 @@ export default function ExpoDetailPage() {
                         name: inspectedBooth.exhibitorProfile.company,
                       })
                     }}
-                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold"
+                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
                   >
-                    <MessageSquare size={13} /> Message Exhibitor
+                    <MessageSquare size={13} /> Message Company
                   </button>
                 )}
               </div>
             ) : inspectedBooth.status === 'available' ? (
               <div className="space-y-3">
                 <p className="text-xs text-slate-600">
-                  This booth space is currently open for reservation. Exhibitors can reserve it
-                  immediately.
+                  This booth is currently available for booking.
                 </p>
                 {isExhibitor && (
                   <button
                     onClick={handleReserveBoothFromInspector}
                     disabled={reservingBooth}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow"
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
                   >
                     {reservingBooth
                       ? 'Reserving...'
-                      : `Reserve Booth ${inspectedBooth.number} Now`}
+                      : `Reserve Booth ${inspectedBooth.number}`}
                   </button>
                 )}
               </div>
@@ -1005,37 +917,33 @@ export default function ExpoDetailPage() {
         )}
       </Modal>
 
-      {/* MODAL 2: DIRECT MESSAGE INQUIRY */}
+      {/* MODAL 2: SEND MESSAGE */}
       <Modal
         isOpen={!!messageModalTarget}
         onClose={() => setMessageModalTarget(null)}
-        title={`Send Direct Message to ${messageModalTarget?.name}`}
+        title={`Message ${messageModalTarget?.name}`}
       >
         <form onSubmit={handleSendDirectMessage} className="space-y-4">
-          <p className="text-xs text-slate-500">
-            Your message will be delivered in real-time via EventSphere Chat. You can continue the
-            conversation anytime in your Messages tab.
-          </p>
           <textarea
             rows={4}
             required
             value={inquiryText}
             onChange={(e) => setInquiryText(e.target.value)}
-            placeholder={`Hi ${messageModalTarget?.name}, I would love to schedule a demo or inquire about...`}
-            className="w-full p-3 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+            placeholder={`Write your message to ${messageModalTarget?.name}...`}
+            className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setMessageModalTarget(null)}
-              className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600"
+              className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={sendingMsg}
-              className="inline-flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold"
+              className="inline-flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
             >
               {sendingMsg ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Send Message
@@ -1044,34 +952,34 @@ export default function ExpoDetailPage() {
         </form>
       </Modal>
 
-      {/* MODAL 3: PRINTABLE VIP QR PASS */}
+      {/* MODAL 3: EVENT TICKET */}
       <Modal
         isOpen={passModalOpen}
         onClose={() => setPassModalOpen(false)}
-        title="Your Official VIP Attendee Badge"
+        title="Event Entry Ticket"
       >
-        <div className="space-y-5">
-          <div className="border-2 border-slate-900 rounded-2xl overflow-hidden bg-white shadow-lg">
-            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white p-5 text-center space-y-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-                EventSphere Official Entry Credential
+        <div className="space-y-4">
+          <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+            <div className="bg-blue-600 text-white p-5 text-center space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-100">
+                Event Admission Pass
               </span>
-              <h4 className="text-lg font-extrabold">{expo.title}</h4>
-              <p className="text-xs text-slate-300">{expo.location}</p>
+              <h4 className="text-lg font-bold">{expo.title}</h4>
+              <p className="text-xs text-blue-100">{expo.location}</p>
             </div>
             <div className="p-6 flex flex-col items-center text-center space-y-4">
-              <div className="p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                 <QrCode size={96} className="text-slate-900 mx-auto" />
               </div>
               <div>
-                <p className="text-lg font-extrabold text-slate-900">{user?.name}</p>
+                <p className="text-lg font-bold text-slate-900">{user?.name}</p>
                 <p className="text-xs text-slate-500">{user?.email}</p>
-                <span className="inline-block mt-2 px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
-                  VIP ALL-ACCESS ATTENDEE PASS
+                <span className="inline-block mt-2 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Confirmed Ticket
                 </span>
               </div>
-              <div className="w-full pt-3 border-t border-slate-100 text-[11px] font-mono text-slate-500">
-                PASS ID: {registration?.qrCode || 'EVS-VIP-VERIFIED-2026'}
+              <div className="w-full pt-3 border-t border-slate-100 text-xs text-slate-500">
+                Ticket ID: {registration?.qrCode || 'PASS-2026'}
               </div>
             </div>
           </div>
@@ -1080,9 +988,9 @@ export default function ExpoDetailPage() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
             >
-              <Printer size={14} /> Print Badge
+              <Printer size={14} /> Print Ticket
             </button>
           </div>
         </div>

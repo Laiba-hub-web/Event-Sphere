@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import {
   Search,
   Calendar,
-  Sparkles,
-  Filter,
-  ArrowUpDown,
-  MapPin,
-  Grid,
-  ArrowRight,
   RotateCcw,
 } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
@@ -93,40 +87,33 @@ export default function ExpoListPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      {/* Dark Hero Header */}
-      <div className="bg-slate-950 text-white py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-7xl mx-auto relative z-10 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-blue-400">
-                <Sparkles size={14} /> Global Trade Show Directory
-              </div>
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-                Explore World-Class Expos & Summits
+      {/* Clean Light Header */}
+      <div className="bg-white border-b border-slate-200 py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+                Upcoming Events &amp; Exhibitions
               </h1>
-              <p className="text-slate-400 text-sm sm:text-base max-w-2xl">
-                Browse international conventions, inspect live 2D booth floor plans, review keynote
-                agendas, and register for instant QR attendee passes.
+              <p className="text-slate-500 text-sm sm:text-base mt-1">
+                Browse events, view schedules and floor plans, or register to attend.
               </p>
             </div>
-
-            <div className="flex items-center gap-3 text-xs font-bold bg-slate-900/90 border border-slate-800 px-4 py-3 rounded-2xl shrink-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{expos.length} Active Global Events</span>
+            <div className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3.5 py-2 rounded-xl self-start md:self-auto">
+              {expos.length} Events Available
             </div>
           </div>
 
           {/* Search & Filter Control Bar */}
-          <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             <div className="md:col-span-6 relative">
-              <Search size={18} className="absolute left-3.5 top-3 text-slate-400" />
+              <Search size={17} className="absolute left-3.5 top-3 text-slate-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by expo title, city, industry, or #tag..."
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                placeholder="Search by event name, city, or topic..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500"
               />
             </div>
 
@@ -134,11 +121,11 @@ export default function ExpoListPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500"
               >
-                <option value="all">All Event Statuses</option>
-                <option value="published">Published (Upcoming)</option>
-                <option value="ongoing">Live / Ongoing Now</option>
+                <option value="all">All Statuses</option>
+                <option value="published">Upcoming</option>
+                <option value="ongoing">Ongoing</option>
                 <option value="completed">Completed</option>
               </select>
             </div>
@@ -147,25 +134,25 @@ export default function ExpoListPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500"
               >
-                <option value="date">Sort by: Soonest Date</option>
-                <option value="booths">Sort by: Largest Floor Plan</option>
-                <option value="title">Sort by: Title (A–Z)</option>
+                <option value="date">Sort by: Date</option>
+                <option value="booths">Sort by: Hall Size</option>
+                <option value="title">Sort by: Name (A–Z)</option>
               </select>
             </div>
           </div>
 
-          {/* Industry Category Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {/* Category Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   category === cat
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                    : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {cat}
@@ -176,19 +163,18 @@ export default function ExpoListPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
-        {/* Results Header */}
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-xs sm:text-sm font-semibold text-slate-600">
-            Showing <span className="font-extrabold text-slate-900">{filteredExpos.length}</span>{' '}
-            {filteredExpos.length === 1 ? 'expo' : 'expos'}
+          <p className="text-xs sm:text-sm font-medium text-slate-600">
+            Showing <span className="font-bold text-slate-900">{filteredExpos.length}</span>{' '}
+            {filteredExpos.length === 1 ? 'event' : 'events'}
             {category !== 'All' && ` in ${category}`}
           </p>
 
           {(search || category !== 'All' || statusFilter !== 'all') && (
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
             >
               <RotateCcw size={13} /> Reset Filters
             </button>
@@ -196,19 +182,19 @@ export default function ExpoListPage() {
         </div>
 
         {loading ? (
-          <div className="py-24 flex justify-center">
-            <LoadingSpinner text="Loading global trade shows..." />
+          <div className="py-20 flex justify-center">
+            <LoadingSpinner text="Loading events..." />
           </div>
         ) : filteredExpos.length === 0 ? (
           <EmptyState
             icon={Calendar}
-            title="No matching expos found"
-            description="No trade shows match your current search or filter criteria."
-            actionLabel="Reset All Filters"
+            title="No events found"
+            description="No events match your current search or filter criteria."
+            actionLabel="Reset Filters"
             onAction={resetFilters}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExpos.map((expo) => (
               <ExpoCard key={expo._id} expo={expo} />
             ))}

@@ -10,6 +10,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { cacheMiddleware, clearApiCache } = require('./middleware/cache');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 
@@ -36,6 +37,9 @@ app.use(express.urlencoded({ extended: false }));
 
 // ─── Static files (uploaded media) ───────────────────────────────────────────
 app.use('/uploads', express.static('uploads'));
+
+// ─── Fast In-Memory GET Cache (auto-invalidated on writes) ───────────────────
+app.use('/api', cacheMiddleware);
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
@@ -65,10 +69,6 @@ const io = new Server(server, {
   },
 });
 
-/**
- * Socket.io authentication middleware
- * Expects the client to send { auth: { token: '<JWT>' } } during handshake.
- */
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
@@ -77,12 +77,12 @@ io.use(async (socket, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
+    const user = await User.findById(decoded.id).select('-password').lean();
     if (!user) {
       return next(new Error('Authentication error: User not found'));
     }
 
-    socket.user = user; // Attach user to socket instance
+    socket.user = user;
     next();
   } catch (err) {
     next(new Error('Authentication error: Invalid token'));
@@ -91,20 +91,13 @@ io.use(async (socket, next) => {
 
 io.on('connection', (socket) => {
   const userId = socket.user._id.toString();
-  console.log(`🔌 Socket connected: ${socket.id} (user: ${userId})`);
 
-  // Each user joins a personal room identified by their userId
   socket.join(userId);
 
-  /**
-   * sendMessage event
-   * Payload: { receiverId: String, content: String, expoId?: String }
-   */
   socket.on('sendMessage', async (data) => {
     try {
       const { receiverId, content, expoId } = data;
 
-      // Persist the message via the Message model
       const Message = require('./models/Message');
       const message = await Message.create({
         sender: userId,
@@ -113,15 +106,14 @@ io.on('connection', (socket) => {
         content,
       });
 
+      clearApiCache();
+
       const populated = await message.populate([
         { path: 'sender', select: 'name avatar' },
         { path: 'receiver', select: 'name avatar' },
       ]);
 
-      // Emit to receiver's personal room
       io.to(receiverId).emit('receiveMessage', populated);
-
-      // Also emit back to sender so their UI updates immediately
       socket.emit('receiveMessage', populated);
     } catch (err) {
       console.error('Socket sendMessage error:', err.message);
@@ -129,20 +121,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Allow clients to explicitly join a room (e.g., an expo chat room)
   socket.on('joinRoom', (roomId) => {
     socket.join(roomId);
-    console.log(`Socket ${socket.id} joined room: ${roomId}`);
   });
 
-  // Allow clients to leave a room
   socket.on('leaveRoom', (roomId) => {
     socket.leave(roomId);
-    console.log(`Socket ${socket.id} left room: ${roomId}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log(`🔌 Socket disconnected: ${socket.id} (user: ${userId})`);
   });
 });
 
@@ -152,7 +136,6 @@ server.listen(PORT, () => {
   console.log(`🚀 EventSphere server running on port ${PORT}`);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error(`Unhandled Rejection: ${err.message}`);
   server.close(() => process.exit(1));

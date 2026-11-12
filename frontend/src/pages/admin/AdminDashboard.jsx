@@ -2,27 +2,26 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Calendar,
-  Users,
   Grid,
-  Clock,
   Plus,
   ArrowRight,
   BarChart3,
-  Sparkles,
   MapPin,
   Store,
   Mic2,
-  Eye,
   Edit3,
   Layers,
+  CheckCircle2,
 } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/ui/StatCard'
 import Badge from '../../components/ui/Badge'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { expoService } from '../../api/services'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
   const [expos, setExpos] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -43,6 +42,7 @@ export default function AdminDashboard() {
   }
 
   const publishedCount = expos.filter((e) => e.status === 'published').length
+  const upcomingCount = expos.filter((e) => new Date(e.date) >= new Date()).length
   const totalBoothCapacity = expos.reduce(
     (acc, e) => acc + (e.boothRows || 5) * (e.boothColumns || 8),
     0
@@ -51,219 +51,197 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Executive Organizer Banner */}
-        <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-7 sm:p-9 overflow-hidden shadow-xl border border-slate-800">
-          <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute right-32 -bottom-20 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+      <div className="space-y-6">
+        {/* Clean Light Header */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-2">
+              Organizer Dashboard
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Welcome back, {user?.name || 'Organizer'}
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Manage your events, floor plans, speaker schedules, and exhibitor applications.
+            </p>
+          </div>
 
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-primary-300 text-xs font-bold uppercase tracking-wider mb-3">
-                <Sparkles size={13} className="text-amber-400" />
-                <span>Organizer &amp; Admin Command Hub</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Global Trade Show &amp; Exhibition Control Center
-              </h1>
-              <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                Orchestrate multi-hall floor plans, approve enterprise exhibitor applications, manage keynote speaker tracks, and monitor live registration telemetry from one unified cockpit.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              <Link
-                to="/admin/expos/create"
-                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-600/30 transition-all"
-              >
-                <Plus size={18} />
-                Launch New Expo
-              </Link>
-              <Link
-                to="/admin/expos"
-                className="inline-flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/15 text-white border border-white/15 rounded-xl text-sm font-semibold transition-all"
-              >
-                Manage Portfolio ({expos.length})
-              </Link>
-            </div>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link
+              to="/admin/expos/create"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-xs transition-colors"
+            >
+              <Plus size={17} />
+              Create Event
+            </Link>
+            <Link
+              to="/admin/expos"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
+            >
+              All Events ({expos.length})
+            </Link>
           </div>
         </div>
 
-        {/* KPI Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Clean Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            label="Total Managed Expos"
+            label="Total Events"
             value={expos.length}
             icon={Calendar}
             variant="primary"
-            subtitle="Active global trade shows"
-            trend="+100% synced"
+            subtitle="All created events"
           />
           <StatCard
-            label="Published & Live"
+            label="Published Events"
             value={publishedCount}
-            icon={Layers}
+            icon={CheckCircle2}
             variant="success"
-            subtitle="Open for public registration"
-            trend="Live on directory"
+            subtitle="Open for registration"
           />
           <StatCard
-            label="Total Booth Inventory"
+            label="Upcoming Dates"
+            value={upcomingCount}
+            icon={Layers}
+            variant="info"
+            subtitle="Scheduled events"
+          />
+          <StatCard
+            label="Total Booth Spaces"
             value={totalBoothCapacity}
             icon={Grid}
-            variant="purple"
-            subtitle="Across all 2D floor plans"
-            trend="Interactive 2D grids"
-          />
-          <StatCard
-            label="Telemetry & Cloud"
-            value="99.9%"
-            icon={BarChart3}
-            variant="info"
-            subtitle="MongoDB Atlas + Socket.io"
-            trend="Optimal"
+            variant="warning"
+            subtitle="Across all event halls"
           />
         </div>
 
-        {/* Quick Command Launcher */}
+        {/* Quick Shortcuts for Latest Event */}
         {firstExpoId && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-400">
-                Rapid Operations Launcher (Flagship Expo)
-              </h2>
-              <span className="text-xs text-slate-500 font-medium">
-                Target: <strong className="text-slate-800">{expos[0]?.title}</strong>
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link
-                to={`/admin/expos/${firstExpoId}/floor-plan`}
-                className="group bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-primary-300 transition-all flex items-start gap-4"
-              >
-                <div className="w-11 h-11 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0 group-hover:bg-primary-600 group-hover:text-white transition-colors">
-                  <Grid size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
-                    2D Floor Plan Studio
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Configure booth pricing, dimensions &amp; exhibitor assignments
-                  </p>
-                </div>
-              </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              to={`/admin/expos/${firstExpoId}/floor-plan`}
+              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+            >
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <Grid size={19} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">
+                  Floor Plan &amp; Booths
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Manage booth pricing and assign companies
+                </p>
+              </div>
+            </Link>
 
-              <Link
-                to={`/admin/expos/${firstExpoId}/exhibitors`}
-                className="group bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-purple-300 transition-all flex items-start gap-4"
-              >
-                <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                  <Store size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
-                    Exhibitor Approvals
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Review partner applications, catalogs &amp; booth requests
-                  </p>
-                </div>
-              </Link>
+            <Link
+              to={`/admin/expos/${firstExpoId}/exhibitors`}
+              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+            >
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <Store size={19} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600">
+                  Exhibitor Requests
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Approve or decline company applications
+                </p>
+              </div>
+            </Link>
 
-              <Link
-                to={`/admin/expos/${firstExpoId}/schedule`}
-                className="group bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-amber-300 transition-all flex items-start gap-4"
-              >
-                <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                  <Mic2 size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-600 transition-colors">
-                    Keynote &amp; Track Builder
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Schedule speakers, auditorium halls &amp; seat capacities
-                  </p>
-                </div>
-              </Link>
+            <Link
+              to={`/admin/expos/${firstExpoId}/schedule`}
+              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <Mic2 size={19} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-600">
+                  Event Schedule
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Add speakers, sessions, and room timings
+                </p>
+              </div>
+            </Link>
 
-              <Link
-                to={`/admin/analytics/${firstExpoId}`}
-                className="group bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all flex items-start gap-4"
-              >
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                  <BarChart3 size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                    Live Telemetry &amp; CSV
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Inspect registration velocity, booth occupancy &amp; ratings
-                  </p>
-                </div>
-              </Link>
-            </div>
+            <Link
+              to={`/admin/analytics/${firstExpoId}`}
+              className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <BarChart3 size={19} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600">
+                  Reports &amp; Insights
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  View registrations, booth bookings, and ratings
+                </p>
+              </div>
+            </Link>
           </div>
         )}
 
-        {/* Expos Command Table */}
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 overflow-hidden">
-          <div className="p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Events Table */}
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-extrabold text-slate-900">
-                Active Trade Shows &amp; Exhibition Portfolio
-              </h2>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">Your Events</h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Direct operational shortcuts for every event in your organization
+                Quickly manage floor plans, schedules, and exhibitors for any event
               </p>
             </div>
             <Link
               to="/admin/expos"
-              className="text-xs font-bold text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 bg-primary-50 px-3.5 py-2 rounded-xl"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1.5 bg-blue-50 px-3.5 py-2 rounded-xl"
             >
-              Open Full Expo Manager ({expos.length}) <ArrowRight size={14} />
+              View All Events <ArrowRight size={14} />
             </Link>
           </div>
 
           {loading ? (
-            <div className="py-16 flex justify-center">
-              <LoadingSpinner text="Loading exhibition portfolio..." />
+            <div className="py-14 flex justify-center">
+              <LoadingSpinner text="Loading events..." />
             </div>
           ) : expos.length === 0 ? (
             <div className="text-center py-14 px-4">
-              <Calendar size={40} className="mx-auto text-slate-300 mb-3" />
-              <p className="text-base font-bold text-slate-900">No expos created yet</p>
+              <Calendar size={36} className="mx-auto text-slate-300 mb-3" />
+              <p className="text-base font-bold text-slate-900">No events created yet</p>
               <p className="text-xs text-slate-500 mt-1 mb-5">
-                Get started by launching your first exhibition event.
+                Get started by creating your first exhibition event.
               </p>
               <Link
                 to="/admin/expos/create"
-                className="px-4 py-2.5 bg-primary-600 text-white rounded-xl text-xs font-bold"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold"
               >
-                Create First Expo
+                Create Event
               </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50/80">
+                <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                      Exhibition Event
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500">
+                      Event Name
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                      Date &amp; Venue
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500">
+                      Date &amp; Location
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                      Hall Grid
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500">
+                      Booths
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500">
                       Status
                     </th>
-                    <th className="px-6 py-3.5 text-right text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                      Command Operations
+                    <th className="px-6 py-3.5 text-right text-xs font-semibold text-slate-500">
+                      Manage
                     </th>
                   </tr>
                 </thead>
@@ -271,29 +249,17 @@ export default function AdminDashboard() {
                   {expos.map((e) => {
                     const totalBooths = (e.boothRows || 5) * (e.boothColumns || 8)
                     return (
-                      <tr key={e._id} className="hover:bg-slate-50/80 transition-colors">
+                      <tr key={e._id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-3.5">
-                            <img
-                              src={
-                                e.coverImage ||
-                                'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&q=80'
-                              }
-                              alt={e.title}
-                              className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
-                            />
-                            <div>
-                              <Link
-                                to={`/expos/${e._id}`}
-                                className="font-bold text-slate-900 hover:text-primary-600 transition-colors line-clamp-1"
-                              >
-                                {e.title}
-                              </Link>
-                              <span className="text-xs text-slate-500 block mt-0.5">
-                                {e.theme || 'Global Industry Summit'}
-                              </span>
-                            </div>
-                          </div>
+                          <Link
+                            to={`/expos/${e._id}`}
+                            className="font-bold text-slate-900 hover:text-blue-600 transition-colors block"
+                          >
+                            {e.title}
+                          </Link>
+                          <span className="text-xs text-slate-500 mt-0.5 block">
+                            {e.theme || 'Exhibition Event'}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-xs font-semibold text-slate-800">
@@ -309,9 +275,9 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">
-                            <Grid size={12} className="text-primary-600" />
-                            {totalBooths} Booths ({e.boothRows || 5}&times;{e.boothColumns || 8})
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
+                            <Grid size={12} className="text-blue-600" />
+                            {totalBooths} Booths
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -323,32 +289,32 @@ export default function AdminDashboard() {
                           <div className="inline-flex items-center gap-1.5">
                             <Link
                               to={`/admin/expos/${e._id}/floor-plan`}
-                              className="px-2.5 py-1.5 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-bold transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold transition-colors"
                             >
-                              Floor Plan
+                              Booths
                             </Link>
                             <Link
                               to={`/admin/expos/${e._id}/schedule`}
-                              className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition-colors"
                             >
                               Schedule
                             </Link>
                             <Link
                               to={`/admin/expos/${e._id}/exhibitors`}
-                              className="px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition-colors"
                             >
                               Exhibitors
                             </Link>
                             <Link
                               to={`/admin/analytics/${e._id}`}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition-colors"
                             >
-                              Analytics
+                              Reports
                             </Link>
                             <Link
                               to={`/admin/expos/${e._id}/edit`}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                              title="Edit Expo"
+                              title="Edit Event"
                             >
                               <Edit3 size={15} />
                             </Link>

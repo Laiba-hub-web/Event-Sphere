@@ -10,9 +10,7 @@ import {
   Briefcase,
   Store,
   PlusCircle,
-  Sparkles,
   ExternalLink,
-  ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -20,77 +18,61 @@ export default function Sidebar({ onNavigate }) {
   const { user, isAdmin, isExhibitor } = useAuth()
 
   const adminLinks = [
-    { label: 'Command Center', to: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Manage All Expos', to: '/admin/expos', icon: Calendar },
-    { label: 'Launch New Expo', to: '/admin/expos/create', icon: PlusCircle },
-    { label: 'B2B Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Account Settings', to: '/profile', icon: User },
+    { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'All Events', to: '/admin/expos', icon: Calendar },
+    { label: 'Create Event', to: '/admin/expos/create', icon: PlusCircle },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
+    { label: 'Profile', to: '/profile', icon: User },
   ]
 
   const exhibitorLinks = [
-    { label: 'Exhibitor Hub', to: '/exhibitor/dashboard', icon: LayoutDashboard },
+    { label: 'Dashboard', to: '/exhibitor/dashboard', icon: LayoutDashboard },
     { label: 'My Applications', to: '/exhibitor/applications', icon: Layers },
-    { label: 'Company Showcase', to: '/exhibitor/profile', icon: Store },
-    { label: 'Discover Expos', to: '/expos', icon: Briefcase },
-    { label: 'B2B Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Account Settings', to: '/profile', icon: User },
+    { label: 'Company Profile', to: '/exhibitor/profile', icon: Store },
+    { label: 'Browse Events', to: '/expos', icon: Briefcase },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
+    { label: 'Profile', to: '/profile', icon: User },
   ]
 
   const attendeeLinks = [
-    { label: 'Attendee Hub', to: '/attendee/dashboard', icon: LayoutDashboard },
-    { label: 'My VIP Passes', to: '/attendee/my-expos', icon: Calendar },
-    { label: 'My Itinerary', to: '/attendee/schedule', icon: Clock },
-    { label: 'Explore Expos', to: '/expos', icon: Briefcase },
-    { label: 'Direct Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Account Settings', to: '/profile', icon: User },
+    { label: 'Dashboard', to: '/attendee/dashboard', icon: LayoutDashboard },
+    { label: 'My Tickets', to: '/attendee/my-expos', icon: Calendar },
+    { label: 'My Schedule', to: '/attendee/schedule', icon: Clock },
+    { label: 'Browse Events', to: '/expos', icon: Briefcase },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
+    { label: 'Profile', to: '/profile', icon: User },
   ]
 
   const links = isAdmin ? adminLinks : isExhibitor ? exhibitorLinks : attendeeLinks
 
-  const roleColor = isAdmin
-    ? 'from-rose-600 to-orange-600'
-    : isExhibitor
-    ? 'from-violet-600 to-indigo-600'
-    : 'from-blue-600 to-emerald-600'
-
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-[calc(100vh-4rem)] h-full flex flex-col justify-between py-6 px-4 select-none no-print">
+    <aside className="w-64 bg-white border-r border-slate-200 min-h-[calc(100vh-4rem)] h-full flex flex-col justify-between py-6 px-4 select-none no-print">
       <div className="space-y-6">
-        {/* Role Identity Card */}
-        <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/70 space-y-3">
-          <div className="flex items-center gap-3">
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-11 h-11 rounded-xl object-cover ring-2 ring-blue-500/40 shrink-0"
-              />
-            ) : (
-              <div
-                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${roleColor} text-white flex items-center justify-center font-extrabold text-base shadow-md shrink-0`}
-              >
-                {user?.name ? user.name[0].toUpperCase() : 'U'}
-              </div>
-            )}
-            <div className="overflow-hidden min-w-0">
-              <p className="text-sm font-bold text-white truncate">{user?.name}</p>
-              <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+        {/* User Card */}
+        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="w-10 h-10 rounded-xl object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              {user?.name ? user.name[0].toUpperCase() : 'U'}
             </div>
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t border-slate-700/60">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-400">
-              <ShieldCheck size={12} /> {user?.role} Portal
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online
-            </span>
+          )}
+          <div className="overflow-hidden min-w-0">
+            <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
+            <p className="text-xs font-medium text-blue-600 capitalize truncate">
+              {user?.role === 'admin' ? 'Organizer' : user?.role}
+            </p>
           </div>
         </div>
 
-        {/* Navigation list */}
+        {/* Navigation Links */}
         <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-            Workspace Navigation
+          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            Menu
           </p>
           <nav className="space-y-1">
             {links.map((item) => {
@@ -102,14 +84,14 @@ export default function Sidebar({ onNavigate }) {
                   end={item.to === '/admin/expos'}
                   onClick={() => onNavigate && onNavigate()}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20'
-                        : 'text-slate-400 hover:bg-slate-800/80 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`
                   }
                 >
-                  <Icon size={17} className="shrink-0" />
+                  <Icon size={18} className="shrink-0" />
                   <span className="truncate">{item.label}</span>
                 </NavLink>
               )
@@ -118,28 +100,16 @@ export default function Sidebar({ onNavigate }) {
         </div>
       </div>
 
-      {/* Bottom Quick Promo Card */}
-      <div className="space-y-4 pt-6">
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/90 to-indigo-950/90 border border-blue-800/40 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-300">
-            <Sparkles size={14} /> Live Expo Catalog
-          </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
-            Browse interactive 2D booth maps, speaker lineups, and keynote schedules.
-          </p>
-          <Link
-            to="/expos"
-            onClick={() => onNavigate && onNavigate()}
-            className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-white hover:text-blue-300 transition-colors"
-          >
-            Open Public Directory <ExternalLink size={12} />
-          </Link>
-        </div>
-
-        <div className="text-[11px] text-slate-500 px-2 flex items-center justify-between">
-          <span>EventSphere Enterprise</span>
-          <span className="font-mono text-slate-400">v2.5</span>
-        </div>
+      {/* Bottom Link */}
+      <div className="pt-6 border-t border-slate-100">
+        <Link
+          to="/expos"
+          onClick={() => onNavigate && onNavigate()}
+          className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-colors"
+        >
+          <span>View Public Events</span>
+          <ExternalLink size={14} className="text-slate-400" />
+        </Link>
       </div>
     </aside>
   )
