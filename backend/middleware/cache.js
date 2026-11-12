@@ -43,3 +43,4 @@ const cacheMiddleware = (req, res, next) => {
 const clearApiCache = () => apiCache.clear();
 
 module.exports = { cacheMiddleware, clearApiCache };
+

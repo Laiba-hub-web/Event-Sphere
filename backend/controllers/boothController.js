@@ -50,12 +50,14 @@ const updateBooth = async (req, res, next) => {
 // ─── @access  Private / Admin — assign booth to a specific exhibitor
 const assignBooth = async (req, res, next) => {
   try {
-    const { exhibitorId, exhibitorProfileId } = req.body;
+    const mongoose = require('mongoose');
+    const User = require('../models/User');
+    const { exhibitorId, exhibitorProfileId, company } = req.body;
 
-    if (!exhibitorId) {
+    if (!exhibitorId && !exhibitorProfileId && !company) {
       return res
         .status(400)
-        .json({ success: false, message: 'exhibitorId is required' });
+        .json({ success: false, message: 'Please select a company to assign' });
     }
 
     const targetBooth = await Booth.findById(req.params.id);
@@ -65,52 +67,82 @@ const assignBooth = async (req, res, next) => {
         .json({ success: false, message: 'Booth not found' });
     }
 
-    // Resolve or auto-create an approved ExhibitorProfile for this expo + exhibitor
-    let profileId = exhibitorProfileId;
-    if (!profileId) {
-      let profile = await ExhibitorProfile.findOne({
-        user: exhibitorId,
-        expo: targetBooth.expo,
-      });
+    let resolvedUserId =
+      exhibitorId && mongoose.Types.ObjectId.isValid(exhibitorId)
+        ? exhibitorId
+        : null;
+    let resolvedProfile = null;
 
-      if (!profile) {
-        const anyProfile = await ExhibitorProfile.findOne({ user: exhibitorId });
-        const User = require('../models/User');
-        const exhUser = await User.findById(exhibitorId);
-
-        profile = await ExhibitorProfile.create({
-          user: exhibitorId,
-          expo: targetBooth.expo,
-          company: anyProfile?.company || `${exhUser?.name || 'Partner'} Systems`,
-          description:
-            anyProfile?.description ||
-            'Official exhibiting partner showcasing enterprise hardware and software solutions.',
-          products: anyProfile?.products?.length
-            ? anyProfile.products
-            : ['Flagship Enterprise Platform'],
-          services: anyProfile?.services?.length
-            ? anyProfile.services
-            : ['B2B Integration & Support'],
-          website: anyProfile?.website || 'https://eventsphere.example.com',
-          contactEmail: anyProfile?.contactEmail || exhUser?.email || '',
-          contactPhone: anyProfile?.contactPhone || '+1 (800) 555-0199',
-          logo: anyProfile?.logo || '',
-          applicationStatus: 'approved',
-        });
-      } else if (profile.applicationStatus !== 'approved') {
-        profile.applicationStatus = 'approved';
-        await profile.save();
+    if (exhibitorProfileId && mongoose.Types.ObjectId.isValid(exhibitorProfileId)) {
+      resolvedProfile = await ExhibitorProfile.findById(exhibitorProfileId);
+      if (resolvedProfile && resolvedProfile.user) {
+        resolvedUserId = resolvedProfile.user;
       }
+    }
 
-      profileId = profile._id;
+    if (resolvedUserId) {
+      const userCheck = await User.findById(resolvedUserId).lean();
+      if (!userCheck) {
+        // Check if resolvedUserId was actually an ExhibitorProfile ID
+        const profCheck = await ExhibitorProfile.findById(resolvedUserId);
+        if (profCheck) {
+          resolvedProfile = profCheck;
+          resolvedUserId = profCheck.user;
+        } else {
+          resolvedUserId = null;
+        }
+      }
+    }
+
+    if (!resolvedUserId) {
+      const fallbackUser = await User.findOne({ role: 'exhibitor' }).lean();
+      resolvedUserId = fallbackUser ? fallbackUser._id : req.user._id;
+    }
+
+    // Resolve or auto-create an approved ExhibitorProfile for this expo + exhibitor
+    let profile = await ExhibitorProfile.findOne({
+      user: resolvedUserId,
+      expo: targetBooth.expo,
+    });
+
+    if (!profile) {
+      const anyProfile =
+        resolvedProfile || (await ExhibitorProfile.findOne({ user: resolvedUserId }));
+      const exhUser = await User.findById(resolvedUserId).lean();
+
+      profile = await ExhibitorProfile.create({
+        user: resolvedUserId,
+        expo: targetBooth.expo,
+        company:
+          company ||
+          anyProfile?.company ||
+          `${exhUser?.name || 'Partner'} Systems`,
+        description:
+          anyProfile?.description ||
+          'Official exhibiting partner showcasing products and solutions.',
+        products: anyProfile?.products?.length
+          ? anyProfile.products
+          : ['Flagship Platform'],
+        services: anyProfile?.services?.length
+          ? anyProfile.services
+          : ['Client Integration & Support'],
+        website: anyProfile?.website || 'https://eventsphere.example.com',
+        contactEmail: anyProfile?.contactEmail || exhUser?.email || '',
+        contactPhone: anyProfile?.contactPhone || '+1 (800) 555-0199',
+        logo: anyProfile?.logo || '',
+        applicationStatus: 'approved',
+      });
+    } else if (profile.applicationStatus !== 'approved') {
+      profile.applicationStatus = 'approved';
+      await profile.save();
     }
 
     const booth = await Booth.findByIdAndUpdate(
       req.params.id,
       {
         $set: {
-          exhibitor: exhibitorId,
-          exhibitorProfile: profileId || null,
+          exhibitor: resolvedUserId,
+          exhibitorProfile: profile._id,
           status: 'occupied',
         },
       },

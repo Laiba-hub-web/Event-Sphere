@@ -218,6 +218,7 @@ const updateProfile = async (req, res, next) => {
 // ─── @access  Public / Private
 const getExhibitorsByExpo = async (req, res, next) => {
   try {
+    const User = require('../models/User');
     const filter = { expo: req.params.expoId };
     if (req.query.includeAll !== 'true' && req.query.all !== 'true') {
       filter.applicationStatus = 'approved';
@@ -225,46 +226,63 @@ const getExhibitorsByExpo = async (req, res, next) => {
 
     let exhibitors = await ExhibitorProfile.find(filter)
       .populate('user', 'name email avatar')
-      .sort({ createdAt: -1, company: 1 });
+      .sort({ createdAt: -1, company: 1 })
+      .lean();
 
-    // If requested for Admin assignment (?all=true / ?includeAll=true) or if this expo has no exhibitors yet,
-    // include all registered exhibitor companies across the platform (deduplicated by user)
+    // Always include all platform exhibitor companies when requested (?all=true) or if this expo has none yet
     if (
       req.query.all === 'true' ||
       req.query.includeAll === 'true' ||
       exhibitors.length === 0
     ) {
-      const allProfiles = await ExhibitorProfile.find({})
-        .populate('user', 'name email avatar')
-        .sort({ company: 1 });
+      const [allProfiles, exhibitorUsers] = await Promise.all([
+        ExhibitorProfile.find({})
+          .populate('user', 'name email avatar')
+          .sort({ company: 1 })
+          .lean(),
+        User.find({ role: 'exhibitor' }).select('name email avatar').lean(),
+      ]);
 
-      const seenUsers = new Set(
-        exhibitors.map((e) => e.user?._id?.toString()).filter(Boolean)
+      const defaultExhUser = exhibitorUsers[0] || null;
+
+      // Ensure existing list items have a valid user reference
+      exhibitors = exhibitors.map((item) => {
+        if (!item.user && defaultExhUser) {
+          return { ...item, user: defaultExhUser };
+        }
+        return item;
+      });
+
+      const seenKeys = new Set(
+        exhibitors
+          .map((e) => e.user?._id?.toString() || e.company)
+          .filter(Boolean)
       );
 
       for (const prof of allProfiles) {
-        const uid = prof.user?._id?.toString();
-        if (uid && !seenUsers.has(uid)) {
-          seenUsers.add(uid);
-          exhibitors.push(prof);
+        const resolvedUser = prof.user || defaultExhUser;
+        const key = resolvedUser?._id?.toString() || prof.company;
+        if (key && !seenKeys.has(key)) {
+          seenKeys.add(key);
+          exhibitors.push({
+            ...prof,
+            user: resolvedUser,
+          });
         }
       }
 
-      // Also include any User with role='exhibitor' who hasn't created a profile yet
-      const User = require('../models/User');
-      const exhibitorUsers = await User.find({ role: 'exhibitor' }).select(
-        'name email avatar'
-      );
       for (const u of exhibitorUsers) {
         const uid = u._id.toString();
-        if (!seenUsers.has(uid)) {
-          seenUsers.add(uid);
+        if (!seenKeys.has(uid)) {
+          seenKeys.add(uid);
           exhibitors.push({
             _id: u._id,
-            company: `${u.name} Enterprises`,
+            company: u.name.includes('(')
+              ? u.name.split('(')[1].replace(')', '').trim() + ' Solutions'
+              : `${u.name} Enterprises`,
             description: 'Registered Exhibitor Partner',
             products: ['Enterprise Solutions'],
-            services: ['B2B Consulting'],
+            services: ['Partner Consulting'],
             applicationStatus: 'approved',
             user: u,
           });

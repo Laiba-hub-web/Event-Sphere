@@ -43,6 +43,16 @@ const errorHandler = (err, req, res, next) => {
     message = 'Token has expired. Please log in again.';
   }
 
+  // ── Network / Database transient errors (hide technical hostnames) ───────────
+  if (
+    /ENOTFOUND|ECONNREFUSED|ETIMEDOUT|mongodb\.net|buffering timed out/i.test(
+      message
+    )
+  ) {
+    statusCode = 503;
+    message = 'Network connection busy. Please try again in a moment.';
+  }
+
   // Log unexpected server errors (but not 4xx client errors)
   if (statusCode === 500) {
     console.error('❌ Unhandled error:', err);

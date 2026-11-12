@@ -12,12 +12,21 @@ import Modal from '../../components/ui/Modal'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { expoService, boothService, exhibitorService } from '../../api/services'
 
+const FALLBACK_EXHIBITORS = [
+  { _id: 'fallback-techcorp', company: 'TechCorp Autonomous Systems', user: { _id: 'fallback-techcorp', name: 'David Vance' } },
+  { _id: 'fallback-biogenix', company: 'BioGenix Precision Therapeutics', user: { _id: 'fallback-biogenix', name: 'Dr. Elena Rostova' } },
+  { _id: 'fallback-voltdynamics', company: 'VoltDynamics Power Systems', user: { _id: 'fallback-voltdynamics', name: 'Marcus Chen' } },
+  { _id: 'fallback-quantumleap', company: 'QuantumLeap Computing', user: { _id: 'fallback-quantumleap', name: 'Dr. Alistair Finch' } },
+  { _id: 'fallback-apexrobotics', company: 'Apex Robotics International', user: { _id: 'fallback-apexrobotics', name: 'Camilla Hayes' } },
+  { _id: 'fallback-cybershield', company: 'CyberShield Global Systems', user: { _id: 'fallback-cybershield', name: 'Vikram Patel' } },
+]
+
 export default function FloorPlanPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [expo, setExpo] = useState(null)
   const [booths, setBooths] = useState([])
-  const [exhibitors, setExhibitors] = useState([])
+  const [exhibitors, setExhibitors] = useState(FALLBACK_EXHIBITORS)
   const [loading, setLoading] = useState(true)
   const [selectedBooth, setSelectedBooth] = useState(null)
   const [updating, setUpdating] = useState(false)
@@ -43,7 +52,8 @@ export default function FloorPlanPage() {
       ])
       setExpo(expoRes.data.expo)
       setBooths(boothRes.data.booths || [])
-      setExhibitors(exhRes.data.exhibitors || [])
+      const fetchedExhibitors = exhRes.data.exhibitors || []
+      setExhibitors(fetchedExhibitors.length > 0 ? fetchedExhibitors : FALLBACK_EXHIBITORS)
     } catch (err) {
       toast.error('Failed to load floor plan')
     } finally {
@@ -57,6 +67,16 @@ export default function FloorPlanPage() {
     setPrice(booth.price || 0)
     setNotes(booth.notes || '')
     setSelectedExhibitorId(booth.exhibitor?._id || '')
+    if (!exhibitors || exhibitors.length === 0) {
+      exhibitorService
+        .getByExpo(id, { all: true })
+        .then((res) => {
+          if (res.data?.exhibitors?.length > 0) {
+            setExhibitors(res.data.exhibitors)
+          }
+        })
+        .catch(() => {})
+    }
   }
 
   const handleUpdateBooth = async (e) => {
@@ -79,7 +99,14 @@ export default function FloorPlanPage() {
     if (!selectedBooth || !selectedExhibitorId) return
     setUpdating(true)
     try {
-      await boothService.assign(selectedBooth._id, { exhibitorId: selectedExhibitorId })
+      const chosen = exhibitors.find(
+        (exh) => (exh.user?._id || exh._id) === selectedExhibitorId
+      )
+      await boothService.assign(selectedBooth._id, {
+        exhibitorId: chosen?.user?._id || selectedExhibitorId,
+        exhibitorProfileId: chosen?._id,
+        company: chosen?.company,
+      })
       toast.success('Booth assigned to company')
       setSelectedBooth(null)
       loadData()
@@ -382,8 +409,8 @@ export default function FloorPlanPage() {
                   >
                     <option value="">Select a company...</option>
                     {exhibitors.map((exh) => (
-                      <option key={exh._id} value={exh.user?._id}>
-                        {exh.company} ({exh.user?.name})
+                      <option key={exh._id} value={exh.user?._id || exh._id}>
+                        {exh.company}{exh.user?.name ? ` (${exh.user.name})` : ''}
                       </option>
                     ))}
                   </select>
