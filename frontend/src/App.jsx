@@ -160,6 +160,16 @@ export default function App() {
               }
             />
             <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute>
+                  <RoleRoute allowedRoles={['admin']}>
+                    <AnalyticsPage />
+                  </RoleRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/analytics/:expoId"
               element={
                 <ProtectedRoute>

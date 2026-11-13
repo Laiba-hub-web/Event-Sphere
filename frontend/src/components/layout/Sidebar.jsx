@@ -11,6 +11,7 @@ import {
   Store,
   PlusCircle,
   ExternalLink,
+  BarChart3,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -21,6 +22,7 @@ export default function Sidebar({ onNavigate }) {
     { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'All Events', to: '/admin/expos', icon: Calendar },
     { label: 'Exhibitor Management', to: '/admin/exhibitors', icon: Store },
+    { label: 'Analytics & Reports', to: '/admin/analytics', icon: BarChart3 },
     { label: 'Create Event', to: '/admin/expos/create', icon: PlusCircle },
     { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Profile', to: '/profile', icon: User },
