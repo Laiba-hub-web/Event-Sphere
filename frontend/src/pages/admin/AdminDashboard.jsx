@@ -17,6 +17,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/ui/StatCard'
 import Badge from '../../components/ui/Badge'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import WelcomeBanner from '../../components/ui/WelcomeBanner'
 import { expoService } from '../../api/services'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -62,36 +63,29 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Clean Light Header */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-2">
-              Organizer Dashboard
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Welcome back, {user?.name || 'Organizer'}
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Manage your events, floor plans, speaker schedules, and exhibitor applications.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Link
-              to="/admin/expos/create"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-xs transition-colors"
-            >
-              <Plus size={17} />
-              Create Event
-            </Link>
-            <Link
-              to="/admin/expos"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
-            >
-              All Events ({expos.length})
-            </Link>
-          </div>
-        </div>
+        {/* Personalized Welcome Banner */}
+        <WelcomeBanner
+          user={user}
+          badgeText="Organizer Hub"
+          subtitle="Manage exhibitions, configure floor plan booths, review applications, and track real-time analytics."
+          actions={
+            <>
+              <Link
+                to="/admin/expos/create"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-xs transition-colors"
+              >
+                <Plus size={17} />
+                Create Event
+              </Link>
+              <Link
+                to="/admin/expos"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
+              >
+                All Events ({expos.length})
+              </Link>
+            </>
+          }
+        />
 
         {/* Clean Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

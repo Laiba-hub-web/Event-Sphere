@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext'
 import { SocketProvider } from './context/SocketContext'
 import ProtectedRoute from './routes/ProtectedRoute'
 import RoleRoute from './routes/RoleRoute'
+import CommandPalette from './components/ui/CommandPalette'
 
 // Public pages
 import Home from './pages/Home'
@@ -58,6 +59,7 @@ export default function App() {
               error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
             }}
           />
+          <CommandPalette />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Home />} />

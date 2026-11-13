@@ -12,8 +12,10 @@ import {
   PlusCircle,
   ExternalLink,
   BarChart3,
+  Search,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { getUserInitials, getRoleTheme } from '../../utils/personalize'
 
 export default function Sidebar({ onNavigate }) {
   const { user, isAdmin, isExhibitor } = useAuth()
@@ -52,25 +54,54 @@ export default function Sidebar({ onNavigate }) {
     <aside className="w-64 bg-white border-r border-slate-200 min-h-[calc(100vh-4rem)] h-full flex flex-col justify-between py-6 px-4 select-none no-print">
       <div className="space-y-6">
         {/* User Card */}
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
+        <Link
+          to="/profile"
+          className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 flex items-center gap-3 transition-colors cursor-pointer group"
+          title="Manage Profile"
+        >
           {user?.avatar ? (
             <img
               src={user.avatar}
               alt={user.name}
-              className="w-10 h-10 rounded-xl object-cover shrink-0"
+              className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200"
             />
           ) : (
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
-              {user?.name ? user.name[0].toUpperCase() : 'U'}
+            <div
+              className={`w-10 h-10 rounded-xl ${
+                getRoleTheme(user?.role).bgClass
+              } text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs`}
+            >
+              {getUserInitials(user?.name)}
             </div>
           )}
-          <div className="overflow-hidden min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
-            <p className="text-xs font-medium text-blue-600 capitalize truncate">
-              {user?.role === 'admin' ? 'Organizer' : user?.role}
+          <div className="overflow-hidden min-w-0 flex-1">
+            <p className="text-sm font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+              {user?.name || 'Account'}
             </p>
+            <span
+              className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                getRoleTheme(user?.role).pillClass
+              } capitalize mt-0.5`}
+            >
+              {user?.role === 'admin' ? 'Organizer' : user?.role || 'User'}
+            </span>
           </div>
-        </div>
+        </Link>
+
+        {/* Quick Search Pill */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('eventsphere:open-palette'))}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-2xs"
+        >
+          <span className="flex items-center gap-2">
+            <Search size={14} className="text-slate-400" />
+            <span>Search anything...</span>
+          </span>
+          <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 border border-slate-200 rounded text-slate-500">
+            ⌘K
+          </kbd>
+        </button>
 
         {/* Navigation Links */}
         <div className="space-y-1">

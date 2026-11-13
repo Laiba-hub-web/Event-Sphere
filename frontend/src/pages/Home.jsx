@@ -14,8 +14,22 @@ import {
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 import ExpoCard from '../components/cards/ExpoCard'
+import { useCountUp } from '../components/ui/StatCard'
 import { expoService } from '../api/services'
 import { useAuth } from '../hooks/useAuth'
+
+function StatNumber({ value, suffix = '', label }) {
+  const count = useCountUp(value, 1200)
+  return (
+    <div className="text-center px-3 py-2">
+      <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        {count}
+        {suffix}
+      </div>
+      <div className="text-xs font-semibold text-slate-500 mt-0.5">{label}</div>
+    </div>
+  )
+}
 
 export default function Home() {
   const { isAuthenticated } = useAuth()
@@ -167,6 +181,14 @@ export default function Home() {
               <ArrowRight size={16} />
             </button>
           </form>
+
+          {/* Interactive Metric Counter Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 max-w-3xl mx-auto shadow-2xs divide-y md:divide-y-0 md:divide-x divide-slate-200">
+            <StatNumber value={12} suffix="+" label="Flagship Expos" />
+            <StatNumber value={850} suffix="+" label="Exhibitor Brands" />
+            <StatNumber value={45} suffix="k+" label="Attendees" />
+            <StatNumber value={99} suffix=".9%" label="Satisfaction" />
+          </div>
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

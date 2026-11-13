@@ -18,6 +18,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/ui/StatCard'
 import Modal from '../../components/ui/Modal'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import WelcomeBanner from '../../components/ui/WelcomeBanner'
 import { registrationService, sessionService } from '../../api/services'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -53,36 +54,29 @@ export default function AttendeeDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Clean Light Header */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-2">
-              Attendee Dashboard
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Welcome back, {user?.name || 'Attendee'}
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              View your event tickets, saved speaker sessions, and upcoming schedules.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Link
-              to="/expos"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-xs transition-colors"
-            >
-              <Briefcase size={17} />
-              Browse Events
-            </Link>
-            <Link
-              to="/attendee/schedule"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
-            >
-              My Schedule ({bookmarks.length})
-            </Link>
-          </div>
-        </div>
+        {/* Personalized Welcome Banner */}
+        <WelcomeBanner
+          user={user}
+          badgeText="Attendee Portal"
+          subtitle="Access verified digital QR entry passes, personalize your conference schedule, and discover innovative exhibitors."
+          actions={
+            <>
+              <Link
+                to="/expos"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-xs transition-colors"
+              >
+                <Briefcase size={17} />
+                Browse Events
+              </Link>
+              <Link
+                to="/attendee/schedule"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors"
+              >
+                My Schedule ({bookmarks.length})
+              </Link>
+            </>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
