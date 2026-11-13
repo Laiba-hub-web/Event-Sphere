@@ -53,9 +53,14 @@ export default function ExpoDetailPage() {
   const [activeTab, setActiveTab] = useState('overview')
 
   const [exhSearch, setExhSearch] = useState('')
+  const [exhCategory, setExhCategory] = useState('all')
+  const [sessionSearch, setSessionSearch] = useState('')
+  const [sessionTopic, setSessionTopic] = useState('all')
   const [inspectedBooth, setInspectedBooth] = useState(null)
   const [passModalOpen, setPassModalOpen] = useState(false)
   const [messageModalTarget, setMessageModalTarget] = useState(null)
+  const [inquiryMode, setInquiryMode] = useState('inquiry')
+  const [appointmentSlot, setAppointmentSlot] = useState('Day 1 — 10:30 AM')
   const [inquiryText, setInquiryText] = useState('')
   const [sendingMsg, setSendingMsg] = useState(false)
   const [reservingBooth, setReservingBooth] = useState(false)
@@ -129,18 +134,34 @@ export default function ExpoDetailPage() {
     if (!inquiryText.trim() || !messageModalTarget) return
     setSendingMsg(true)
     try {
+      const prefix =
+        inquiryMode === 'appointment'
+          ? `[Appointment Request — ${appointmentSlot}] `
+          : ''
       await messageService.send({
         receiverId: messageModalTarget.userId,
         expoId: id,
-        content: inquiryText.trim(),
+        content: `${prefix}${inquiryText.trim()}`,
       })
-      toast.success(`Message sent to ${messageModalTarget.name}!`)
+      toast.success(
+        inquiryMode === 'appointment'
+          ? `Appointment request sent to ${messageModalTarget.name}!`
+          : `Message sent to ${messageModalTarget.name}!`
+      )
       setInquiryText('')
       setMessageModalTarget(null)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not send message')
     } finally {
       setSendingMsg(false)
+    }
+  }
+
+  const handleLocateBooth = (boothNumber) => {
+    setActiveTab('floorplan')
+    const found = booths.find((b) => b.number === boothNumber)
+    if (found) {
+      setInspectedBooth(found)
     }
   }
 
@@ -226,17 +247,53 @@ export default function ExpoDetailPage() {
     if (b.exhibitorProfile?._id) {
       exhibitorBoothMap[b.exhibitorProfile._id] = b.number
     }
+    if (b.exhibitor?._id) {
+      exhibitorBoothMap[b.exhibitor._id] = b.number
+    }
   })
 
+  // Extract unique categories/products/services for exhibitor filtering
+  const exhibitorCategories = Array.from(
+    new Set(
+      exhibitors.flatMap((ex) => [
+        ...(ex.services || []),
+        ...(ex.products || []).slice(0, 1),
+      ])
+    )
+  ).slice(0, 8)
+
   const filteredExhibitors = exhibitors.filter((ex) => {
-    const q = exhSearch.toLowerCase()
-    if (!q) return true
-    return (
+    const q = exhSearch.toLowerCase().trim()
+    const matchesSearch =
+      !q ||
       ex.company?.toLowerCase().includes(q) ||
       ex.description?.toLowerCase().includes(q) ||
       ex.products?.some((p) => p.toLowerCase().includes(q)) ||
       ex.services?.some((s) => s.toLowerCase().includes(q))
-    )
+
+    const matchesCategory =
+      exhCategory === 'all' ||
+      ex.products?.includes(exhCategory) ||
+      ex.services?.includes(exhCategory)
+
+    return matchesSearch && matchesCategory
+  })
+
+  // Extract unique topics for session filtering
+  const sessionTopics = Array.from(
+    new Set(sessions.map((s) => s.topic).filter(Boolean))
+  )
+
+  const filteredSessions = sessions.filter((s) => {
+    const q = sessionSearch.toLowerCase().trim()
+    const matchesSearch =
+      !q ||
+      s.title?.toLowerCase().includes(q) ||
+      s.speaker?.toLowerCase().includes(q) ||
+      s.topic?.toLowerCase().includes(q) ||
+      s.location?.toLowerCase().includes(q)
+    const matchesTopic = sessionTopic === 'all' || s.topic === sessionTopic
+    return matchesSearch && matchesTopic
   })
 
   return (
@@ -520,32 +577,61 @@ export default function ExpoDetailPage() {
         {/* TAB 2: SCHEDULE */}
         {activeTab === 'schedule' && (
           <div className="space-y-5 max-w-4xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  Speaker Sessions &amp; Schedule
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Save sessions to build your personal event schedule.
-                </p>
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Event Schedule, Keynotes &amp; Workshops
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Browse sessions, bookmark or register for talks of interest, and receive automatic reminders.
+                  </p>
+                </div>
+                <Link
+                  to="/attendee/schedule"
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-3.5 py-2 rounded-xl shrink-0"
+                >
+                  My Schedule &amp; Reminders &rarr;
+                </Link>
               </div>
-              <Link
-                to="/attendee/schedule"
-                className="text-xs font-semibold text-blue-600 hover:text-blue-800"
-              >
-                View My Schedule &rarr;
-              </Link>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-slate-100">
+                <div className="relative flex-1">
+                  <Search size={15} className="absolute left-3.5 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={sessionSearch}
+                    onChange={(e) => setSessionSearch(e.target.value)}
+                    placeholder="Search sessions by title, speaker, room, or topic..."
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                {sessionTopics.length > 0 && (
+                  <select
+                    value={sessionTopic}
+                    onChange={(e) => setSessionTopic(e.target.value)}
+                    className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700"
+                  >
+                    <option value="all">All Topics ({sessions.length})</option>
+                    {sessionTopics.map((top) => (
+                      <option key={top} value={top}>
+                        {top}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
-            {sessions.length === 0 ? (
+            {filteredSessions.length === 0 ? (
               <EmptyState
                 icon={Clock}
-                title="No sessions scheduled yet"
-                description="The schedule for this event will be posted soon."
+                title="No matching sessions found"
+                description="Try clearing your search or topic filter."
               />
             ) : (
               <div className="space-y-4">
-                {sessions.map((s) => (
+                {filteredSessions.map((s) => (
                   <SessionCard
                     key={s._id}
                     session={s}
@@ -563,32 +649,81 @@ export default function ExpoDetailPage() {
         {/* TAB 3: EXHIBITORS DIRECTORY */}
         {activeTab === 'exhibitors' && (
           <div className="space-y-6">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  Exhibiting Companies
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Search companies by name, product, or service.
-                </p>
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Exhibitor Directory &amp; Search
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Search and filter exhibitors by category, product, or keyword. View booth locations on the floor plan or start a chat/appointment.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2.5 w-full lg:w-auto">
+                  <div className="relative w-full sm:w-72">
+                    <Search size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={exhSearch}
+                      onChange={(e) => setExhSearch(e.target.value)}
+                      placeholder="Search company, product, or keyword..."
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <select
+                    value={exhCategory}
+                    onChange={(e) => setExhCategory(e.target.value)}
+                    className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700"
+                  >
+                    <option value="all">All Categories &amp; Products</option>
+                    {exhibitorCategories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="relative w-full sm:w-80">
-                <Search size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={exhSearch}
-                  onChange={(e) => setExhSearch(e.target.value)}
-                  placeholder="Search companies..."
-                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
-                />
-              </div>
+
+              {/* Quick Category / Product Filter Pills */}
+              {exhibitorCategories.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setExhCategory('all')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      exhCategory === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    All ({exhibitors.length})
+                  </button>
+                  {exhibitorCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setExhCategory(cat)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                        exhCategory === cat
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {filteredExhibitors.length === 0 ? (
               <EmptyState
                 icon={Users}
                 title="No matching exhibitors"
-                description="Try clearing your search filter."
+                description="Try clearing your search or category filter."
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -596,16 +731,27 @@ export default function ExpoDetailPage() {
                   <ExhibitorCard
                     key={exh._id}
                     exhibitor={exh}
-                    boothNumber={exhibitorBoothMap[exh._id]}
-                    onContact={(target) => {
+                    boothNumber={
+                      exh.booth?.number ||
+                      exhibitorBoothMap[exh._id] ||
+                      exhibitorBoothMap[exh.user?._id]
+                    }
+                    onLocateBooth={(boothNum) => handleLocateBooth(boothNum)}
+                    onContact={(target, mode = 'inquiry') => {
                       if (!isAuthenticated) {
-                        toast.error('Please sign in to message exhibitors')
+                        toast.error('Please sign in to contact exhibitors')
                         navigate('/login')
                         return
                       }
+                      setInquiryMode(mode)
                       setMessageModalTarget({
                         userId: target.user?._id || target.user,
                         name: target.company,
+                        email: target.contactEmail || target.user?.email || '',
+                        boothNumber:
+                          target.booth?.number ||
+                          exhibitorBoothMap[target._id] ||
+                          exhibitorBoothMap[target.user?._id],
                       })
                     }}
                   />
@@ -917,37 +1063,121 @@ export default function ExpoDetailPage() {
         )}
       </Modal>
 
-      {/* MODAL 2: SEND MESSAGE */}
+      {/* MODAL 2: SEND MESSAGE OR BOOK APPOINTMENT */}
       <Modal
         isOpen={!!messageModalTarget}
         onClose={() => setMessageModalTarget(null)}
-        title={`Message ${messageModalTarget?.name}`}
+        title={`Contact ${messageModalTarget?.name}`}
       >
         <form onSubmit={handleSendDirectMessage} className="space-y-4">
-          <textarea
-            rows={4}
-            required
-            value={inquiryText}
-            onChange={(e) => setInquiryText(e.target.value)}
-            placeholder={`Write your message to ${messageModalTarget?.name}...`}
-            className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
-          />
-          <div className="flex justify-end gap-2">
+          {/* Mode Toggle: General Inquiry vs Book Appointment */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
             <button
               type="button"
-              onClick={() => setMessageModalTarget(null)}
-              className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 cursor-pointer"
+              onClick={() => setInquiryMode('inquiry')}
+              className={`py-2 rounded-lg transition-colors cursor-pointer ${
+                inquiryMode === 'inquiry'
+                  ? 'bg-white text-blue-600 shadow-2xs'
+                  : 'text-slate-600'
+              }`}
             >
-              Cancel
+              Chat / General Inquiry
             </button>
             <button
-              type="submit"
-              disabled={sendingMsg}
-              className="inline-flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              type="button"
+              onClick={() => setInquiryMode('appointment')}
+              className={`py-2 rounded-lg transition-colors cursor-pointer ${
+                inquiryMode === 'appointment'
+                  ? 'bg-white text-blue-600 shadow-2xs'
+                  : 'text-slate-600'
+              }`}
             >
-              {sendingMsg ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Send Message
+              Book Booth Appointment
             </button>
+          </div>
+
+          {messageModalTarget?.boothNumber && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 flex items-center justify-between">
+              <span>Meeting Location:</span>
+              <strong>Booth {messageModalTarget.boothNumber}</strong>
+            </div>
+          )}
+
+          {inquiryMode === 'appointment' && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Preferred Appointment Slot
+              </label>
+              <select
+                value={appointmentSlot}
+                onChange={(e) => setAppointmentSlot(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+              >
+                <option value="Day 1 — 10:30 AM">Day 1 — 10:30 AM (Morning Demo)</option>
+                <option value="Day 1 — 02:00 PM">Day 1 — 02:00 PM (Afternoon Consultation)</option>
+                <option value="Day 2 — 11:00 AM">Day 2 — 11:00 AM (Product Walkthrough)</option>
+                <option value="Day 2 — 03:30 PM">Day 2 — 03:30 PM (Partnership Meeting)</option>
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              {inquiryMode === 'appointment'
+                ? 'Appointment Topic / Notes'
+                : 'Your Message'}
+            </label>
+            <textarea
+              rows={4}
+              required
+              value={inquiryText}
+              onChange={(e) => setInquiryText(e.target.value)}
+              placeholder={
+                inquiryMode === 'appointment'
+                  ? `Hi ${messageModalTarget?.name}, I would like to schedule a live product demo at your booth...`
+                  : `Write your inquiry to ${messageModalTarget?.name}...`
+              }
+              className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+            {messageModalTarget?.email ? (
+              <a
+                href={`mailto:${messageModalTarget.email}?subject=EventSphere ${
+                  inquiryMode === 'appointment' ? 'Appointment Request' : 'Inquiry'
+                } - ${expo.title}&body=${encodeURIComponent(inquiryText)}`}
+                className="text-xs font-semibold text-blue-600 hover:underline"
+              >
+                Or Send via Email Client &rarr;
+              </a>
+            ) : (
+              <div />
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMessageModalTarget(null)}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={sendingMsg}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                {sendingMsg ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Send size={14} />
+                )}
+                {inquiryMode === 'appointment'
+                  ? 'Request Appointment'
+                  : 'Send Message'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

@@ -9,7 +9,11 @@ import {
   MapPin,
   Printer,
   CheckCircle2,
+  BellRing,
+  Search,
+  MessageSquare,
 } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/ui/StatCard'
 import Modal from '../../components/ui/Modal'
@@ -94,7 +98,7 @@ export default function AttendeeDashboard() {
             value={bookmarks.length}
             icon={Clock}
             variant="primary"
-            subtitle="Bookmarked talks"
+            subtitle="Bookmarked with reminders"
           />
           <StatCard
             label="Entry Passes"
@@ -104,6 +108,107 @@ export default function AttendeeDashboard() {
             subtitle="Ready to view or print"
           />
         </div>
+
+        {/* Quick Attendee Hub Shortcuts */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Link
+            to="/expos"
+            className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <Search size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600">
+                Exhibitor Search &amp; Floor Plans
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Filter exhibitors by product, view booth maps &amp; book appointments
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/attendee/schedule"
+            className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+              <BellRing size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-600">
+                Schedule &amp; Reminders
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Browse sessions, bookmark talks &amp; receive reminder alerts
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/messages"
+            className="group bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <MessageSquare size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600">
+                Exhibitor Chat &amp; Inquiries
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Message exhibitors directly for inquiries or booth meetings
+              </p>
+            </div>
+          </Link>
+        </div>
+
+        {/* Upcoming Bookmarked Session Reminders */}
+        {bookmarks.length > 0 && (
+          <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                <BellRing size={16} className="text-amber-600" />
+                <span>Upcoming Session Reminders ({bookmarks.length})</span>
+              </div>
+              <Link
+                to="/attendee/schedule"
+                className="text-xs font-semibold text-amber-800 hover:underline"
+              >
+                Manage Reminders &rarr;
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {bookmarks.slice(0, 4).map((sess) => (
+                <div
+                  key={sess._id}
+                  className="bg-white p-3.5 rounded-xl border border-amber-200/80 flex items-center justify-between gap-3 text-xs"
+                >
+                  <div className="min-w-0">
+                    <div className="font-bold text-slate-900 truncate">{sess.title}</div>
+                    <div className="text-slate-500 mt-0.5">
+                      {sess.speaker} &bull; {sess.location || 'Main Hall'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toast.success(
+                        `Reminder: "${sess.title}" starts soon in ${
+                          sess.location || 'Main Hall'
+                        }!`
+                      )
+                    }
+                    className="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold shrink-0 cursor-pointer"
+                  >
+                    Alert
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Registered Events */}
         <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
