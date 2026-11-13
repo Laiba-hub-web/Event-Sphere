@@ -80,26 +80,23 @@ export default function EditExpoPage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <button
           onClick={() => navigate('/admin/expos')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
-          <ArrowLeft size={15} /> Back to Expo Portfolio
+          <ArrowLeft size={15} /> Back to Events
         </button>
 
-        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200/90">
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200">
           <div className="mb-6 pb-5 border-b border-slate-100">
-            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-blue-600 mb-1">
-              <Sparkles size={13} /> Event Configuration
-            </div>
-            <h1 className="text-2xl font-extrabold text-slate-900">Edit Exhibition Parameters</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Update event dates, venue location, cover imagery, or publication status.
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Edit Event Details</h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Update event dates, venue location, theme, cover image, or status.
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Official Expo Title
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Event Title
               </label>
               <input
                 type="text"

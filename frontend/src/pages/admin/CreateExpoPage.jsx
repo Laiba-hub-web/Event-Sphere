@@ -46,10 +46,10 @@ export default function CreateExpoPage() {
         tags: data.tags ? data.tags.split(',').map((t) => t.trim()) : [],
       }
       await expoService.create(payload)
-      toast.success(`Expo created and ${totalUnits} floor booths synthesized!`)
+      toast.success(`Event created with ${totalUnits} floor booths!`)
       navigate('/admin/expos')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create expo')
+      toast.error(err.response?.data?.message || 'Failed to create event')
     } finally {
       setSubmitting(false)
     }
@@ -60,26 +60,23 @@ export default function CreateExpoPage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <button
           onClick={() => navigate('/admin/expos')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
-          <ArrowLeft size={15} /> Back to Expo Portfolio
+          <ArrowLeft size={15} /> Back to Events
         </button>
 
-        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200/90">
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200">
           <div className="mb-6 pb-5 border-b border-slate-100">
-            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-blue-600 mb-1">
-              <Sparkles size={13} /> Event Synthesis Wizard
-            </div>
-            <h1 className="text-2xl font-extrabold text-slate-900">Launch New Exhibition Event</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Configure event parameters and automatically synthesize the interactive 2D booth floor plan.
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Create New Exhibition Event</h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Set up event details, dates, location, and customize the booth floor plan.
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Official Expo Title
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Event Title
               </label>
               <input
                 type="text"

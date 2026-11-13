@@ -132,14 +132,14 @@ export default function ScheduleManagerPage() {
           <div>
             <button
               onClick={() => navigate('/admin/expos')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-2 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 mb-2 transition-colors cursor-pointer"
             >
-              <ArrowLeft size={14} /> Back to Expo Portfolio
+              <ArrowLeft size={14} /> Back to Events
             </button>
-            <h1 className="text-2xl font-extrabold text-slate-900">
-              Keynote &amp; Track Schedule Builder
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+              Conference &amp; Session Schedule
             </h1>
-            <p className="text-sm text-slate-500 mt-0.5">{expo?.title}</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{expo?.title}</p>
           </div>
           <button
             onClick={openCreateModal}
