@@ -140,6 +140,16 @@ export default function App() {
               }
             />
             <Route
+              path="/admin/exhibitors"
+              element={
+                <ProtectedRoute>
+                  <RoleRoute allowedRoles={['admin']}>
+                    <ExhibitorApplicationsPage />
+                  </RoleRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/expos/:id/exhibitors"
               element={
                 <ProtectedRoute>

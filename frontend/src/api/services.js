@@ -39,8 +39,9 @@ export const exhibitorService = {
   getByExpo: (expoId, params) =>
     api.get(`/exhibitors/expo/${expoId}`, { params }),
   getOne: (id) => api.get(`/exhibitors/${id}`),
-  approve: (id) => api.put(`/exhibitors/${id}/approve`),
+  approve: (id, data) => api.put(`/exhibitors/${id}/approve`, data),
   reject: (id, data) => api.put(`/exhibitors/${id}/reject`, data),
+  updateStatus: (id, data) => api.put(`/exhibitors/application/${id}`, data),
   updateProfile: (data) => api.put('/exhibitors/profile', data),
   getProfile: () => api.get('/exhibitors/profile'),
 }

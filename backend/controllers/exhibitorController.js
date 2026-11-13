@@ -180,10 +180,10 @@ const getMyApplications = async (req, res, next) => {
 };
 
 // ─── @route   PUT /api/exhibitors/application/:id ─────────────────────────────
-// ─── @access  Private / Admin — approve or reject
+// ─── @access  Private / Admin — approve, reject, or set pending
 const updateApplication = async (req, res, next) => {
   try {
-    const { applicationStatus, rejectionReason } = req.body;
+    const { applicationStatus, rejectionReason, expoId } = req.body;
 
     const allowedStatuses = ['pending', 'approved', 'rejected'];
     if (!allowedStatuses.includes(applicationStatus)) {
@@ -193,26 +193,27 @@ const updateApplication = async (req, res, next) => {
       });
     }
 
+    const resolved = await resolveOrCreateProfile(req.params.id, expoId);
+    if (!resolved) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Application not found' });
+    }
+
     const updateData = { applicationStatus };
     if (applicationStatus === 'rejected' && rejectionReason) {
       updateData.rejectionReason = rejectionReason;
-    } else if (applicationStatus === 'approved') {
-      updateData.rejectionReason = ''; // Clear any previous rejection reason
+    } else if (applicationStatus === 'approved' || applicationStatus === 'pending') {
+      updateData.rejectionReason = '';
     }
 
     const profile = await ExhibitorProfile.findByIdAndUpdate(
-      req.params.id,
+      resolved._id,
       { $set: updateData },
       { new: true, runValidators: true }
     )
       .populate('user', 'name email')
       .populate('expo', 'title');
-
-    if (!profile) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Application not found' });
-    }
 
     res.status(200).json({ success: true, profile });
   } catch (err) {
@@ -282,17 +283,25 @@ const updateProfile = async (req, res, next) => {
 const getExhibitorsByExpo = async (req, res, next) => {
   try {
     const User = require('../models/User');
+    const Booth = require('../models/Booth');
     const filter = { expo: req.params.expoId };
     if (req.query.includeAll !== 'true' && req.query.all !== 'true') {
       filter.applicationStatus = 'approved';
     }
 
-    let exhibitors = await ExhibitorProfile.find(filter)
-      .populate('user', 'name email avatar')
-      .sort({ createdAt: -1, company: 1 })
-      .lean();
+    const [initialExhibitors, expoBooths] = await Promise.all([
+      ExhibitorProfile.find(filter)
+        .populate('user', 'name email avatar createdAt')
+        .sort({ createdAt: 1, company: 1 })
+        .lean(),
+      Booth.find({ expo: req.params.expoId, status: { $ne: 'available' } })
+        .select('number size status price notes exhibitor exhibitorProfile')
+        .lean(),
+    ]);
 
-    // Always include all platform exhibitor companies when requested (?all=true) or if this expo has none yet
+    let exhibitors = initialExhibitors;
+
+    // Always include all platform exhibitor companies when requested (?all=true / ?includeAll=true) or if this expo has none yet
     if (
       req.query.all === 'true' ||
       req.query.includeAll === 'true' ||
@@ -300,10 +309,10 @@ const getExhibitorsByExpo = async (req, res, next) => {
     ) {
       const [allProfiles, exhibitorUsers] = await Promise.all([
         ExhibitorProfile.find({})
-          .populate('user', 'name email avatar')
+          .populate('user', 'name email avatar createdAt')
           .sort({ company: 1 })
           .lean(),
-        User.find({ role: 'exhibitor' }).select('name email avatar').lean(),
+        User.find({ role: 'exhibitor' }).select('name email avatar createdAt').lean(),
       ]);
 
       const defaultExhUser = exhibitorUsers[0] || null;
@@ -346,12 +355,28 @@ const getExhibitorsByExpo = async (req, res, next) => {
             description: 'Registered Exhibitor Partner',
             products: ['Enterprise Solutions'],
             services: ['Partner Consulting'],
-            applicationStatus: 'approved',
+            contactEmail: u.email,
+            applicationStatus: 'pending',
             user: u,
           });
         }
       }
     }
+
+    // Attach assigned booth for this expo to each exhibitor entry
+    exhibitors = exhibitors.map((exh) => {
+      const exhUserId = exh.user?._id?.toString();
+      const exhProfileId = exh._id?.toString();
+      const matchedBooth = expoBooths.find(
+        (b) =>
+          (b.exhibitorProfile && b.exhibitorProfile.toString() === exhProfileId) ||
+          (b.exhibitor && exhUserId && b.exhibitor.toString() === exhUserId)
+      );
+      return {
+        ...exh,
+        booth: matchedBooth || null,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -398,21 +423,58 @@ const getMyProfile = async (req, res, next) => {
   }
 };
 
+// Helper to resolve or auto-create an ExhibitorProfile when Admin approves/rejects a registered exhibitor user
+const resolveOrCreateProfile = async (idOrUserId, expoId) => {
+  let profile = await ExhibitorProfile.findById(idOrUserId);
+  if (profile) return profile;
+
+  const User = require('../models/User');
+  const exhUser = await User.findById(idOrUserId).lean();
+  if (!exhUser) return null;
+
+  const existingForUser = await ExhibitorProfile.findOne({ user: exhUser._id });
+  if (existingForUser && (!expoId || existingForUser.expo?.toString() === expoId.toString())) {
+    return existingForUser;
+  }
+
+  let targetExpoId = expoId || existingForUser?.expo;
+  if (!targetExpoId) {
+    const firstExpo = await Expo.findOne().sort({ createdAt: 1 }).lean();
+    targetExpoId = firstExpo?._id;
+  }
+
+  profile = await ExhibitorProfile.create({
+    user: exhUser._id,
+    expo: targetExpoId,
+    company: exhUser.name.includes('(')
+      ? exhUser.name.split('(')[1].replace(')', '').trim() + ' Solutions'
+      : `${exhUser.name} Enterprises`,
+    description: 'Registered Exhibitor Partner showcasing products and services.',
+    products: ['Enterprise Solutions'],
+    services: ['Partner Consulting'],
+    contactEmail: exhUser.email,
+    applicationStatus: 'pending',
+  });
+
+  return profile;
+};
+
 // ─── @route   PUT /api/exhibitors/:id/approve ─────────────────────────────────
 // ─── @access  Private / Admin
 const approveApplication = async (req, res, next) => {
   try {
+    const resolved = await resolveOrCreateProfile(req.params.id, req.body?.expoId);
+    if (!resolved) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
     const profile = await ExhibitorProfile.findByIdAndUpdate(
-      req.params.id,
+      resolved._id,
       { $set: { applicationStatus: 'approved', rejectionReason: '' } },
       { new: true, runValidators: true }
     )
       .populate('user', 'name email')
       .populate('expo', 'title');
-
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Application not found' });
-    }
 
     res.status(200).json({ success: true, profile });
   } catch (err) {
@@ -424,18 +486,36 @@ const approveApplication = async (req, res, next) => {
 // ─── @access  Private / Admin
 const rejectApplication = async (req, res, next) => {
   try {
-    const { rejectionReason } = req.body;
+    const { rejectionReason, expoId } = req.body;
+    const resolved = await resolveOrCreateProfile(req.params.id, expoId);
+    if (!resolved) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    // Also release any booth assigned to this exhibitor in this expo if rejected
+    const Booth = require('../models/Booth');
+    await Booth.updateMany(
+      {
+        $or: [
+          { exhibitorProfile: resolved._id },
+          { expo: resolved.expo, exhibitor: resolved.user },
+        ],
+      },
+      { $set: { status: 'available', exhibitor: null, exhibitorProfile: null } }
+    );
+
     const profile = await ExhibitorProfile.findByIdAndUpdate(
-      req.params.id,
-      { $set: { applicationStatus: 'rejected', rejectionReason: rejectionReason || 'Application rejected by organizer' } },
+      resolved._id,
+      {
+        $set: {
+          applicationStatus: 'rejected',
+          rejectionReason: rejectionReason || 'Application rejected by organizer',
+        },
+      },
       { new: true, runValidators: true }
     )
       .populate('user', 'name email')
       .populate('expo', 'title');
-
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Application not found' });
-    }
 
     res.status(200).json({ success: true, profile });
   } catch (err) {

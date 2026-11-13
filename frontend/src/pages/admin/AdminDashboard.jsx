@@ -173,10 +173,10 @@ export default function AdminDashboard() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600">
-                    Exhibitor Requests
+                    Exhibitor Management
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5 truncate">
-                    {activeExpo?.title}
+                    Approve/reject &amp; assign booths
                   </p>
                 </div>
               </Link>
