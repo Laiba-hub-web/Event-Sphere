@@ -154,6 +154,15 @@ Visit **`http://localhost:5173`** in your browser.
 
 ---
 
+## 📚 Interactive Documentation & Guides
+
+Comprehensive documentation has been authored in English with visual Mermaid flowcharts, sequence diagrams, ER models, API references, and step-by-step role guides:
+
+- 📖 **[User Documentation](docs/USER_DOCUMENTATION.md)**: End-to-end user manuals for Organizers, Exhibitors, and Attendees, interactive tutorials, FAQs, and troubleshooting workflows.
+- 🛠️ **[Developer Documentation](docs/DEVELOPER_DOCUMENTATION.md)**: Technical architecture, database ER model, full REST API endpoints reference, Socket.io event contracts, caching strategies, and deployment guidelines.
+
+---
+
 ## 🧪 Build & Quality Verification
 
 - **Backend syntax**: Verified clean with `node --check`
